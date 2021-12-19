@@ -1,0 +1,8 @@
+.container {
+    display: grid;
+    grid-template-columns: 100px 100px 100px;
+    grid-template-rows: auto;
+    position: relative;
+    margin: auto;
+    width: 30vw;
+}  

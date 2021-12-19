@@ -33,17 +33,6 @@ function MainNavigation() {
             <li className="nav-item">
               <NavLink
                 exact
-                to="/water"
-                activeClassName="active"
-                className="nav-links"
-                onClick={handleClick}
-              >
-                Water
-              </NavLink>
-            </li>
-            <li className="nav-item">
-              <NavLink
-                exact
                 to="/air"
                 activeClassName="active"
                 className="nav-links"
@@ -61,6 +50,17 @@ function MainNavigation() {
                 onClick={handleClick}
               >
                 Climate
+              </NavLink>
+            </li>
+            <li className="nav-item">
+              <NavLink
+                exact
+                to="/water"
+                activeClassName="active"
+                className="nav-links"
+                onClick={handleClick}
+              >
+                Water
               </NavLink>
             </li>
           </ul>

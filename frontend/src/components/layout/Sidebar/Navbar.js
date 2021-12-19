@@ -18,6 +18,7 @@ const Navbar = (props) => {
 
   return (
     <>
+    <div>
       <IconContext.Provider value={{ color: '#52A9D9' }}>
         <div className='sidebar'>
           <Link to='#' className='sidemenu-bars'>
@@ -55,6 +56,7 @@ const Navbar = (props) => {
           </ul>
         </nav>
       </IconContext.Provider>
+      </div>
     </>
   );
 };
