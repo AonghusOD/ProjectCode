@@ -17,7 +17,7 @@ const Navbar = (props) => {
   };
 
   return (
-    <>
+    
     <div>
       <IconContext.Provider value={{ color: '#52A9D9' }}>
         <div className='sidebar'>
@@ -57,7 +57,7 @@ const Navbar = (props) => {
         </nav>
       </IconContext.Provider>
       </div>
-    </>
+   
   );
 };
 

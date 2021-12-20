@@ -19,36 +19,36 @@ function App(props) {
     <div>
     <Router>
       <Layout />
-      <Navbar />
+      <div><Navbar /></div>
       <Switch>
         <Route path='/' exact>
           <Home />
         </Route>
-        <Route path='/air'>
+        <Route path='/air/'>
           <Air />
         </Route>
-        <Route path='/water'>
+        <Route path='/water/'>
           <Water />
         </Route>
-        <Route path='/climate'>
+        <Route path='/climate/'>
           <Climate />
         </Route>
-        <Route path='/air-quality'>
+        <Route path='/air-quality/'>
           <AirQuality />
         </Route>
-        <Route path='/humidity'>
+        <Route path='/humidity/'>
           <Humidity />
         </Route>
-      <Route path='/temp'>
+      <Route path='/temp/'>
           <Temp />
         </Route>
-        <Route path='/ec'>
+        <Route path='/ec/'>
         <EC />
       </Route>
-        <Route path='/ph'>
+        <Route path='/ph/'>
           <PH />
         </Route>
-        <Route path='/co2'>
+        <Route path='/co2/'>
           <CO2 />
         </Route>
       </Switch>
