@@ -19,7 +19,12 @@
 #include "DFRobot_ESP_PH.h"
 #include "EEPROM.h"
 #include "GravityTDS.h"
+#include "DHT.h"
 
+//DHT22
+#define DHTPIN 17
+#define DHTTYPE DHT22   // DHT 22  (AM2302), AM2321
+DHT dht(DHTPIN, DHTTYPE);
 //PH
 DFRobot_ESP_PH ph;
 #define ESPADC 4096.0   //the esp Analog Digital Convertion value
@@ -35,6 +40,7 @@ void TaskLDR( void *pvParameters );
 void TaskAir( void *pvParameters );
 void TaskReadTDS( void *pvParameters );
 void TaskReadPH( void *pvParameters );
+void TaskReadClimate( void *pvParameters );
 void TaskSendData( void *pvParameters );
 
 ///TDS///
@@ -47,6 +53,10 @@ void setup() {
   
   // initialize serial communication at 115200 bits per second:
   Serial.begin(115200);
+
+  Serial.println(F("DHTxx test!"));
+
+  dht.begin();
   EEPROM.begin(32);//needed to permit storage of calibration value in eeprom
   ph.begin();
 
@@ -76,6 +86,15 @@ void setup() {
     TaskReadPH
     ,  "PH Reading"
     ,  1024  // Stack size
+    ,  NULL
+    ,  1  // Priority
+    ,  NULL
+    ,  1);
+
+    xTaskCreatePinnedToCore(
+    TaskReadClimate
+    ,  "PH Reading"
+    ,  4000  // Stack size
     ,  NULL
     ,  1  // Priority
     ,  NULL
@@ -204,6 +223,43 @@ void TaskReadTDS( void *pvParameters ){
     Serial.println("ppm");
    vTaskDelay(10000);
   }
+}
+
+void TaskReadClimate( void *pvParameters ){
+   // Wait a few seconds between measurements.
+  delay(2000);
+
+  // Reading temperature or humidity takes about 250 milliseconds!
+  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+  float h = dht.readHumidity();
+  // Read temperature as Celsius (the default)
+  float t = dht.readTemperature();
+  // Read temperature as Fahrenheit (isFahrenheit = true)
+  float f = dht.readTemperature(true);
+
+  // Check if any reads failed and exit early (to try again).
+//  if (isnan(h) || isnan(t) || isnan(f)) {
+//    Serial.println(F("Failed to read from DHT sensor!"));
+//    return;
+//  }
+
+  // Compute heat index in Fahrenheit (the default)
+  float hif = dht.computeHeatIndex(f, h);
+  // Compute heat index in Celsius (isFahreheit = false)
+  float hic = dht.computeHeatIndex(t, h, false);
+
+  Serial.print(F("Humidity: "));
+  Serial.print(h);
+  Serial.print(F("%  Temperature: "));
+  Serial.print(t);
+  Serial.print(F("°C "));
+  Serial.print(f);
+  Serial.print(F("°F  Heat index: "));
+  Serial.print(hic);
+  Serial.print(F("°C "));
+  Serial.print(hif);
+  Serial.println(F("°F"));
+  vTaskDelay(10000); 
 }
 
 void TaskSendData(void *pvParameters)  // This is a task.

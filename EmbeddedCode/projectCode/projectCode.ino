@@ -33,7 +33,7 @@ DHT dht(DHTPIN, DHTTYPE);
 //int ldrPin = 35;
 /** LDR light value = 0 if not updated */
 long newLDRValue = 0;
-#define LIGHT_SENSOR_PIN 34 // ESP32 pin GIOP36 (ADC0)
+#define LIGHT_SENSOR_PIN 36 // ESP32 pin SP
 
 ////CCS811
 Adafruit_CCS811 ccs;
