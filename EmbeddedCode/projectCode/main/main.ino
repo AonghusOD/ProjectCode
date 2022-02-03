@@ -13,7 +13,9 @@
      cal:tds value -> calibrate with the known tds value(25^c). e.g.cal:707
      exit -> save the parameters and exit the calibration mode
  ****************************************************/
+ //added task.h if any problems
 #include "FreeRTOS.h"
+//#include "freertos/task.h"
 #include "Adafruit_CCS811.h"
 #include "main.h"
 #include "DFRobot_ESP_PH.h"
@@ -21,6 +23,12 @@
 #include "GravityTDS.h"
 #include <Ticker.h>
 #include "DHTesp.h"
+#include <Arduino.h>
+#include <hp_BH1750.h>  //  include the library
+
+
+hp_BH1750 BH1750;       //  create the sensor
+
 
 //DHT22
 DHTesp dhtSensor1;
@@ -71,6 +79,7 @@ void TaskAir( void *pvParameters );
 void TaskReadPH( void *pvParameters );
 void TaskReadTDS( void *pvParameters );
 void TaskReadClimate( void *pvParameters );
+void TaskReadLux( void *pvParameters );
 void TaskSendData( void *pvParameters );
 
 
@@ -78,6 +87,9 @@ void TaskSendData( void *pvParameters );
 void setup() {
   // initialize serial communication at 115200 bits per second:
   Serial.begin(115200);
+
+  //BH1750
+  bool avail = BH1750.begin(BH1750_TO_GROUND);
   
   //ph
   EEPROM.begin(32);//needed to permit storage of calibration value in eeprom
@@ -89,19 +101,17 @@ void setup() {
   gravityTds.setAdcRange(4096);  //1024 for 10bit ADC;4096 for 12bit ADC
   gravityTds.begin();  //initialization
 
-  //ldr
-  pinMode(LIGHT_SENSOR_PIN,INPUT);
-  adcAttachPin(LIGHT_SENSOR_PIN);
+  ccs.begin();
   
   // Now set up two tasks to run independently.
-
-  xTaskCreate(
-    TaskLDR
-    ,  "Read LDR"
-    ,  1024  // Stack size
-    ,  NULL
-    ,  1  // Priority
-    ,  NULL );
+//
+//  xTaskCreate(
+//    TaskAir
+//    ,  "Read Air"
+//    ,  1024  // Stack size
+//    ,  NULL
+//    ,  1  // Priority
+//    ,  NULL );
 
     xTaskCreatePinnedToCore(
     TaskReadPH
@@ -124,10 +134,19 @@ void setup() {
     xTaskCreatePinnedToCore(
     TaskAir
     ,  "Read Air"
-    ,  1024  // Stack size
+    ,  2056  // Stack size
     ,  NULL
     ,  1  // Priority
     ,  NULL
+    ,  0);
+
+    xTaskCreatePinnedToCore(
+    TaskReadLux
+    ,  "Read Lux"
+    ,  1024  // Stack size
+    ,  NULL
+    ,  1  // Priority
+    ,  NULL 
     ,  1);
 
     xTaskCreatePinnedToCore(
@@ -190,7 +209,7 @@ void TaskLDR(void *pvParameters)  // This is a task.
     Serial.println(LDRValue);
      Serial.print("Core");
     Serial.println(xPortGetCoreID());
-    vTaskDelay(1000);  // one tick delay (15ms) in between reads for stability
+    vTaskDelay(10000);  // one tick delay (15ms) in between reads for stability
   }
 }
 
@@ -198,7 +217,6 @@ void TaskLDR(void *pvParameters)  // This is a task.
 void TaskAir(void *pvParameters)  // This is a task.
 {
   (void) pvParameters;
-  
   if(!ccs.begin()){
     Serial.println("Failed to start sensor! Please check your wiring.");
     while(1);
@@ -211,7 +229,7 @@ void TaskAir(void *pvParameters)  // This is a task.
   {
     if(ccs.available()){
     if(!ccs.readData()){
-      Serial.print("CO2: ");
+      Serial.print("CO2: ................");
       Serial.print(ccs.geteCO2());
       Serial.print("ppm, TVOC: ");
       Serial.println(ccs.getTVOC());
@@ -223,7 +241,7 @@ void TaskAir(void *pvParameters)  // This is a task.
   }
   Serial.print("Core");
   Serial.println(xPortGetCoreID());
-    vTaskDelay(1000);  // one tick delay (15ms) in between reads for stability
+    vTaskDelay(10000);  // one tick delay (15ms) in between reads for stability
   }
 }
 
@@ -244,7 +262,7 @@ void TaskReadPH( void *pvParameters )
     Serial.print("pH:");
     Serial.println(phValue, 4);
   }
-  vTaskDelay(1000);  // one tick delay (15ms) in between reads for stability
+  vTaskDelay(10000);  // one tick delay (15ms) in between reads for stability
   }
 }
 
@@ -257,7 +275,7 @@ void TaskReadTDS( void *pvParameters ){
     Serial.print("TDS:");
     Serial.print(tdsValue,0);
     Serial.println("ppm");
-   vTaskDelay(1000);
+   vTaskDelay(10000);
   }
 }
 
@@ -276,7 +294,23 @@ void TaskReadClimate(void *pvParameters) {
     Serial.println("Temp: " + String(sensor1Data.temperature,2) + "'C Humidity: " + String(sensor1Data.humidity,1) + "%");
     gotNewTemperature = false;
   }
-    vTaskDelay(1000);  // one tick delay (15ms) in between reads for stability
+    vTaskDelay(10000);  // one tick delay (15ms) in between reads for stability
+  }
+}
+
+void TaskReadLux( void *pvParameters )
+{
+  //Send data to database
+  for(;;)
+  {
+      // put your main code here, to run repeatedly:
+  BH1750.start();   //starts a measurement
+  float lux=BH1750.getLux();  //  waits until a conversion finished
+  Serial.print("Light..............................");
+  Serial.println(lux); 
+  Serial.print("Core");
+  Serial.println(xPortGetCoreID());
+  vTaskDelay(10000);  // one tick delay (15ms) in between reads for stability
   }
 }
 
