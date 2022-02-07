@@ -114,7 +114,7 @@ void setup() {
     ,  "SD Write"
     ,  2056  // Stack size
     ,  NULL
-    ,  1  // Priority
+    ,  2  // Priority
     ,  NULL
     ,  1);
 
@@ -272,7 +272,7 @@ void TaskReadPH( void *pvParameters )
 }
 
 void TaskReadTDS( void *pvParameters ){
-  int sendData = 23;
+  int sendData = 0;
   for(;;){
   //temperature = readTemperature();  //add your temperature sensor and read it
     gravityTds.setTemperature(temperature);  // set the temperature and execute temperature compensation
@@ -280,7 +280,7 @@ void TaskReadTDS( void *pvParameters ){
     tdsValue = gravityTds.getTdsValue();  // then get the value
     Serial.print("TDS:");
     Serial.print(tdsValue,0);
-    //sendData = tdsValue;
+    sendData = tdsValue;
     xQueueSend(data_Queue, &sendData, 0);
     Serial.println("ppm");
    vTaskDelay(10000);
@@ -290,6 +290,8 @@ void TaskReadTDS( void *pvParameters ){
 
 void TaskReadClimate(void *pvParameters) {
   Serial.println("tempTask loop started");
+  int tempTemp = 0;
+  int tempHumidity = 0;
   for(;;)
   {
     if (tasksEnabled && !gotNewTemperature) { // Read temperature only if old data was processed already
@@ -301,6 +303,10 @@ void TaskReadClimate(void *pvParameters) {
    if (gotNewTemperature) {
    Serial.println("Sensor 1 data:");
     Serial.println("Temp: " + String(sensor1Data.temperature,2) + "'C Humidity: " + String(sensor1Data.humidity,1) + "%");
+    tempTemp = sensor1Data.temperature;
+    xQueueSend(data_Queue, &tempTemp, 0);
+    //tempHumidity = sensor1Data.humidity;
+    //xQueueSend(data_Queue, &tempHumidity, 0);
     gotNewTemperature = false;
   }
     vTaskDelay(10000);  // one tick delay (15ms) in between reads for stability
