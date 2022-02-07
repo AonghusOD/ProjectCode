@@ -14,8 +14,11 @@
      exit -> save the parameters and exit the calibration mode
  ****************************************************/
  //added task.h if any problems
-#include "FreeRTOS.h"
-//#include "freertos/task.h"
+#include <FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/queue.h>
+
+
 #include "Adafruit_CCS811.h"
 #include "main.h"
 #include "DFRobot_ESP_PH.h"
@@ -26,6 +29,7 @@
 #include <Arduino.h>
 #include <hp_BH1750.h>  //  include the library
 
+QueueHandle_t data_Queue = xQueueCreate(5, sizeof(int));
 
 hp_BH1750 BH1750;       //  create the sensor
 
@@ -74,7 +78,7 @@ Adafruit_CCS811 ccs;
 
 
 // define tasks for 
-void TaskLDR( void *pvParameters );
+void TaskSDWrite( void *pvParameters );
 void TaskAir( void *pvParameters );
 void TaskReadPH( void *pvParameters );
 void TaskReadTDS( void *pvParameters );
@@ -105,13 +109,14 @@ void setup() {
   
   // Now set up two tasks to run independently.
 //
-//  xTaskCreate(
-//    TaskAir
-//    ,  "Read Air"
-//    ,  1024  // Stack size
-//    ,  NULL
-//    ,  1  // Priority
-//    ,  NULL );
+    xTaskCreatePinnedToCore(
+    TaskSDWrite
+    ,  "SD Write"
+    ,  2056  // Stack size
+    ,  NULL
+    ,  1  // Priority
+    ,  NULL
+    ,  1);
 
     xTaskCreatePinnedToCore(
     TaskReadPH
@@ -197,18 +202,18 @@ void loop()
 
 
 
-void TaskLDR(void *pvParameters)  // This is a task.
+void TaskSDWrite(void *pvParameters)  // This is a task.
 {
   (void) pvParameters;
-  
+  int received_Data = 0;
   for (;;)
   {
-    // read the input on analog pin A3:
-    long LDRValue = analogRead(LIGHT_SENSOR_PIN);
-    // print out the value you read:
-    Serial.println(LDRValue);
-     Serial.print("Core");
-    Serial.println(xPortGetCoreID());
+    if(xQueueReceive(data_Queue, &received_Data, portMAX_DELAY) == pdTRUE){
+       Serial.print("Received From Queue:");
+       Serial.println(received_Data);
+    }
+     //Serial.print("Core");
+   // Serial.println(xPortGetCoreID());
     vTaskDelay(10000);  // one tick delay (15ms) in between reads for stability
   }
 }
@@ -267,6 +272,7 @@ void TaskReadPH( void *pvParameters )
 }
 
 void TaskReadTDS( void *pvParameters ){
+  int sendData = 23;
   for(;;){
   //temperature = readTemperature();  //add your temperature sensor and read it
     gravityTds.setTemperature(temperature);  // set the temperature and execute temperature compensation
@@ -274,10 +280,13 @@ void TaskReadTDS( void *pvParameters ){
     tdsValue = gravityTds.getTdsValue();  // then get the value
     Serial.print("TDS:");
     Serial.print(tdsValue,0);
+    //sendData = tdsValue;
+    xQueueSend(data_Queue, &sendData, 0);
     Serial.println("ppm");
    vTaskDelay(10000);
   }
 }
+
 
 void TaskReadClimate(void *pvParameters) {
   Serial.println("tempTask loop started");
