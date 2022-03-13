@@ -150,7 +150,7 @@ void setup() {
     ,  "Read Lux"
     ,  1024  // Stack size
     ,  NULL
-    ,  1  // Priority
+    ,  2  // Priority
     ,  NULL 
     ,  1);
 
@@ -263,7 +263,7 @@ void TaskReadPH( void *pvParameters )
     Serial.println(voltage, 4);
     
 
-    phValue = ph.readPH(voltage, 25); // convert voltage to pH with temperature compensation
+    phValue = ph.readPH(voltage, 19); // convert voltage to pH with temperature compensation
     Serial.print("pH:");
     Serial.println(phValue, 4);
   }
