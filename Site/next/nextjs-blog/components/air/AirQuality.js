@@ -1,37 +1,41 @@
-import React from "react";
+import { React, useState, useEffect } from "react";
 import { Line } from "react-chartjs-2";
 import { useHistory } from "react-router-dom";
 
 function AirQuality() {
-  const history = useHistory();
-  //fetch("api/getAir")
-  let air;
+  const [data, setData] = useState(null)
+  const [isLoading, setLoading] = useState(false)
 
- /*WORKING
- fetch("api/getAir")
-    .then((res) => {
-      this.setState({
-        air: res.data,
-      });
-      console.log(air);
-    })
-    .catch((error) => {
-      console.log(error);
-    });*/
+  useEffect(() => {
+    setLoading(true)
+    fetch('api/getAir')
+      .then((res) => res.json())
+      .then((data) => {
+        setData(data)
+        setLoading(false)
+      })
+  }, [])
 
-    fetch("api/getAir")
-    .then((res) => {
-      this.setState({
-        air: res.data,
-      });
-    })
-    .catch((error) => {
-      console.log(error);
-    });
+  if (isLoading) return <p>Loading...</p>
+  if (!data) return <p>No profile data</p>
 
-  console.log(air);
+  //////////////////////////////////////////////////
+  // const [dataObj, setDataObj] = useState();
 
-  const data = {
+  // useEffect(() => {
+  //   fetch("api/getAir")
+  //     .then((res) => res.json())
+  //     .then((data) => {
+  //       setDataObj((oldDataObj) => {
+  //         let prevDataObj = JSON.parse(JSON.stringify(oldDataObj));
+  //         prevDataObj.noMessages = data.noMessages;
+  //         return prevDataObj;
+  //       });
+  //     });
+  // }, []);
+  ///////////////////////////////////////////////////////
+
+  const data1 = {
     labels: ["January", "February", "March", "April", "May", "June", "July"],
     datasets: [
       {
@@ -53,25 +57,34 @@ function AirQuality() {
         pointHoverBorderWidth: 2,
         pointRadius: 1,
         pointHitRadius: 10,
-        data: [65, 59, 80, 81, 56, 55, 40],
+        data: [53, data.airReading, 80, 81, 56, 55, 40],
       },
     ],
   };
 
   return (
-    <div>
-      <h2>AirQuality Data</h2>
-      <div
-        style={{
-          height: "40vh",
-          position: "relative",
-          marginBottom: "1%",
-          padding: "1%",
-        }}
-      >
-        <Line data={data} options={{ maintainAspectRatio: false }} />
+    <section>
+      <div>
+        <h2>AirQuality Data</h2>
+        <h1>{data.airReading}</h1>
+        {/* <ul>
+          {air.map((meetup) => {
+            <li>{meetup.airReading}</li>;
+          })}
+        </ul> */}
+        <div
+          style={{
+            height: "40vh",
+            position: "relative",
+            marginBottom: "1%",
+            padding: "1%",
+          }}
+        >
+          <Line data={data1} options={{ maintainAspectRatio: false }} />
+          
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
 

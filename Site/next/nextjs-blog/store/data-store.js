@@ -1,7 +1,7 @@
 import { createContext, useState, useEffect } from 'react';
 
 const initialDataState = {
-    noEmployees: '25'
+    noMessages: '25'
 }
 const DataContext = createContext(initialDataState);
 
@@ -14,36 +14,36 @@ export function DataContextProvider(props) {
         .then((data) => {
             setDataObj((oldDataObj) => {
                 let prevDataObj = JSON.parse(JSON.stringify(oldDataObj))
-                prevDataObj.noEmployees = data.noEmployees
+                prevDataObj.noMessages = data.noMessages
                 return prevDataObj
             });
         })
       }, []); 
 
     // see https://nextjs.org/docs/basic-features/data-fetching/client-side
-    function getNoEmployees() {
-        return dataObj.noEmployees
+    function getNoMessages() {
+        return dataObj.noMessages
     }
 
-    async function setNoEmployees(theNewNumber)  {
+    async function setNoMessages(theNewNumber)  {
         const response = await fetch('api/setData', {
             method: 'POST',
             headers: {
             'Content-Type': 'application/json'
             },
-            body: JSON.stringify({noEmployees: theNewNumber}) 
+            body: JSON.stringify({noMessages: theNewNumber}) 
         });
 
         setDataObj((oldDataObj) => {
             let prevDataObj = JSON.parse(JSON.stringify(oldDataObj))
-            prevDataObj.noEmployees = theNewNumber
+            prevDataObj.noMessages = theNewNumber
             return prevDataObj
         });
     }
 
     const context = {
-        getNoEmployees: getNoEmployees,
-        setNoEmployees: setNoEmployees
+        getNoMessages: getNoMessages,
+        setNoMessages: setNoMessages
     };
 
     return (

@@ -15,43 +15,43 @@ const airModel = mongoose.model("airInfo", airSchema);
 
 let blogSchema = new Schema(
   {
-    noEmployees: String
+    noMessages: String
   },
-  { collection: "employees" }
+  { collection: "message" }
 );
-const EmployeeModel = mongoose.model("employeeInfo", blogSchema);
+const MessagesModel = mongoose.model("messagesInfo", blogSchema);
 
 /* GET home page. */
 router.get("/", function (req, res, next) {
   res.render("index", { title: "Express" })
 });
 
-router.post("/setNoEmployees", async function (req, res, next) {
+router.post("/setNoMessages", async function (req, res, next) {
   console.log(req.body)
-  const data = await EmployeeModel.updateOne({}, req.body,{upsert: true});
-  //var data = new EmployeeModel(req.body)
-  //EmployeeModel.updateOne({}, data);
-  //const data = new EmployeeModel({_id : ObjectId("6222018bb2e6654c58c8cb22")});
+  const data = await MessagesModel.updateOne({}, req.body,{upsert: true});
+  //var data = new MessagesModel(req.body)
+  //MessagesModel.updateOne({}, data);
+  //const data = new MessagesModel({_id : ObjectId("6222018bb2e6654c58c8cb22")});
   //data.overwrite(req.body);
   //data.save()
   res.end()
 });
 
-router.post("/getNoEmployees", function (req, res, next) {
-  //let theDoc = EmployeeModel.findOne({_id : ObjectId("6222018bb2e6654c58c8cb22")});
-  EmployeeModel.find().then(function (docs) {
+router.post("/getNoMessages", function (req, res, next) {
+  //let theDoc = MessagesModel.findOne({_id : ObjectId("6222018bb2e6654c58c8cb22")});
+  MessagesModel.find().then(function (docs) {
     let theDoc = docs[docs.length-1]
-     console.log("/getNoEmployees: " + theDoc)
+     console.log("/getNoMessages: " + theDoc)
      // theDoc = JSON.stringify(theDoc)
     res.status(200).json(theDoc)
   });
 });
 
-router.get("/getAir", function (req, res, next) {
+router.post("/getAir", function (req, res, next) {
   airModel.find().then(function (docs) {
     let theDoc = docs[docs.length-1]
      console.log("/getAir: " + theDoc)
-     // theDoc = JSON.stringify(theDoc)
+    //theDoc = JSON.stringify(theDoc)
     res.status(200).json(theDoc)
   });
 });
