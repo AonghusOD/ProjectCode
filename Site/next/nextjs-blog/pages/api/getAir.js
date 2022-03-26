@@ -2,7 +2,7 @@
 
 export default function handler(req, res) {
     fetch('http://localhost:8000/getAir', {
-        method: 'GET'
+        method: 'POST'
     })
     .then((res) => res.json())
     .then((data) => {
