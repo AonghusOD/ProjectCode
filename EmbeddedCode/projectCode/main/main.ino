@@ -1,6 +1,6 @@
 /* Aonghus O Domhnaill
    Student ID: G00293306
-   Project Grow - Climate Monitor
+   Environment Monitor
    Started code Week 10, used Arduino libraries to get base code for each sensor
    Problems with PH module not giving correct reading
    LDR,DHT22,CS811 - Are working as expected
@@ -40,8 +40,11 @@ typedef struct {
   uint32_t qData2;
 } dataStruct;
 
-#define climate_ID 0
-#define HUMID_ID 1
+#define CLIMATE_ID 0
+#define AIR_ID 1
+#define PH_ID 2
+#define TDS_ID 3
+#define LUX_ID 4
 
 
 ///////////////////////////////////////JSON STUFF
@@ -215,7 +218,8 @@ void setup() {
 
   Serial.println(F("SD library initialized"));
 
-
+  //  Serial.println(F("Delete original file if exists!"));
+  //  SD.remove(filename);
   //BH1750
   bool avail = BH1750.begin(BH1750_TO_GROUND);
 
@@ -361,17 +365,63 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
       JsonObject objArrayData = data.createNestedObject();
 
       switch (received_Data.sensor) {
-        case climate_ID:
-          objArrayData["Temperature"] = received_Data.qData;
-          objArrayData["Humidity"] = received_Data.qData2;
-          boolean isSaved = saveJSonToAFile(&doc, filename);
-          if (isSaved) {
-            Serial.println("File saved!");
-          } else {
-            Serial.println("Error on save File!");
+        case CLIMATE_ID:
+          {
+            objArrayData["Temperature"] = received_Data.qData;
+            objArrayData["Humidity"] = received_Data.qData2;
+            boolean isSaved = saveJSonToAFile(&doc, filename);
+            if (isSaved) {
+              Serial.println("File saved!");
+            } else {
+              Serial.println("Error on save File!");
+            }
+            break;
           }
-          break;
-
+        case AIR_ID:
+          {
+            objArrayData["CO2"] = received_Data.qData;
+            objArrayData["HVOC"] = received_Data.qData2;
+            boolean isSaved = saveJSonToAFile(&doc, filename);
+            if (isSaved) {
+              Serial.println("File saved!");
+            } else {
+              Serial.println("Error on save File!");
+            }
+            break;
+          }
+        case PH_ID:
+          {
+            objArrayData["PH"] = received_Data.qData;
+            boolean isSaved = saveJSonToAFile(&doc, filename);
+            if (isSaved) {
+              Serial.println("File saved!");
+            } else {
+              Serial.println("Error on save File!");
+            }
+            break;
+          }
+        case TDS_ID:
+          {
+            objArrayData["TDS"] = received_Data.qData;
+            boolean isSaved = saveJSonToAFile(&doc, filename);
+            if (isSaved) {
+              Serial.println("File saved!");
+            } else {
+              Serial.println("Error on save File!");
+            }
+            break;
+          }
+        case LUX_ID:
+          {
+            objArrayData["LUX"] = received_Data.qData;
+            boolean isSaved = saveJSonToAFile(&doc, filename);
+            if (isSaved) {
+              Serial.println("File saved!");
+            } else {
+              Serial.println("Error on save File!");
+            }
+            break;
+          }
       }
 
       Serial.print("Core");
@@ -387,6 +437,7 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
 void TaskAir(void *pvParameters)  // This is a task.
 {
   (void) pvParameters;
+  dataStruct AirData;
   if (!ccs.begin()) {
     Serial.println("Failed to start sensor! Please check your wiring.");
     while (1);
@@ -403,6 +454,10 @@ void TaskAir(void *pvParameters)  // This is a task.
         Serial.print(ccs.geteCO2());
         Serial.print("ppm, TVOC: ");
         Serial.println(ccs.getTVOC());
+        AirData.sensor = AIR_ID;
+        AirData.qData = ccs.geteCO2();
+        AirData.qData2 = ccs.getTVOC();
+        xQueueSend(data_Queue, &AirData, 0);
       }
       else {
         Serial.println("ERROR!");
@@ -411,12 +466,13 @@ void TaskAir(void *pvParameters)  // This is a task.
     }
     Serial.print("Core");
     Serial.println(xPortGetCoreID());
-    vTaskDelay(1000);  // one tick delay (15ms) in between reads for stability
+    vTaskDelay(100000);  // one tick delay (15ms) in between reads for stability
   }
 }
 
 void TaskReadPH( void *pvParameters )
 {
+  dataStruct PHData;
   for (;;) {
     static unsigned long timepoint = millis();
     if (millis() - timepoint > 1000U) //time interval: 1s
@@ -431,13 +487,16 @@ void TaskReadPH( void *pvParameters )
       phValue = ph.readPH(voltage, 19); // convert voltage to pH with temperature compensation
       Serial.print("pH:");
       Serial.println(phValue, 4);
+      PHData.sensor = PH_ID;
+      PHData.qData = phValue;
+      xQueueSend(data_Queue, &PHData, 0);
     }
-    vTaskDelay(10000);  // one tick delay (15ms) in between reads for stability
+    vTaskDelay(100000);  // one tick delay (15ms) in between reads for stability
   }
 }
 
 void TaskReadTDS( void *pvParameters ) {
-  int sendData = 0;
+  dataStruct TDSData;
   for (;;) {
     //temperature = readTemperature();  //add your temperature sensor and read it
     gravityTds.setTemperature(temperature);  // set the temperature and execute temperature compensation
@@ -445,10 +504,12 @@ void TaskReadTDS( void *pvParameters ) {
     tdsValue = gravityTds.getTdsValue();  // then get the value
     Serial.print("TDS:");
     Serial.print(tdsValue, 0);
-    sendData = tdsValue;
-    xQueueSend(data_Queue, &sendData, 0);
+
     Serial.println("ppm");
-    vTaskDelay(10000);
+    TDSData.sensor = TDS_ID;
+    TDSData.qData = tdsValue;
+    xQueueSend(data_Queue, &TDSData, 0);
+    vTaskDelay(100000);
   }
 }
 
@@ -467,7 +528,7 @@ void TaskReadClimate(void *pvParameters) {
     if (gotNewTemperature) {
       Serial.println("Sensor 1 data:");
       Serial.println("Temp: " + String(sensor1Data.temperature, 2) + "'C Humidity: " + String(sensor1Data.humidity, 1) + "%");
-      ClimateData.sensor = climate_ID;
+      ClimateData.sensor = CLIMATE_ID;
       ClimateData.qData = sensor1Data.temperature;
       ClimateData.qData2 = sensor1Data.humidity;
       xQueueSend(data_Queue, &ClimateData, 0);
@@ -475,13 +536,13 @@ void TaskReadClimate(void *pvParameters) {
       //xQueueSend(data_Queue, &tempHumidity, 0);
       gotNewTemperature = false;
     }
-    vTaskDelay(10000);  // one tick delay (15ms) in between reads for stability
+    vTaskDelay(100000);  // one tick delay (15ms) in between reads for stability
   }
 }
 
 void TaskReadLux( void *pvParameters )
 {
-  //Send data to database
+  dataStruct LuxData;
   for (;;)
   {
     // put your main code here, to run repeatedly:
@@ -491,7 +552,11 @@ void TaskReadLux( void *pvParameters )
     Serial.println(lux);
     Serial.print("Core");
     Serial.println(xPortGetCoreID());
-    vTaskDelay(10000);  // one tick delay (15ms) in between reads for stability
+    LuxData.sensor = LUX_ID;
+    LuxData.qData = lux;
+    xQueueSend(data_Queue, &LuxData, 0);
+
+    vTaskDelay(100000);  // one tick delay (15ms) in between reads for stability
   }
 }
 
