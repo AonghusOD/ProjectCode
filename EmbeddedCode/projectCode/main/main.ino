@@ -34,14 +34,14 @@
 #include "DHTesp.h"
 #include <Arduino.h>
 #include <hp_BH1750.h>  //  include the library
-//typedef struct {
-//  uint8_t sensor;
-//  uint8_t qData;
-//  uint32_t qData2;
-//} dataStruct;
-//
-//#define CO2_ID 0
-//#define TVOC_ID 1
+typedef struct {
+  uint8_t sensor;
+  uint8_t qData;
+  uint32_t qData2;
+} dataStruct;
+
+#define climate_ID 0
+#define HUMID_ID 1
 
 
 ///////////////////////////////////////JSON STUFF
@@ -136,7 +136,7 @@ void printFile(const char *filename) {
 }
 //----------------------------------------------------------------------
 
-QueueHandle_t data_Queue = xQueueCreate(5, sizeof(int));
+QueueHandle_t data_Queue = xQueueCreate(10, sizeof(dataStruct));
 
 hp_BH1750 BH1750;       //  create the sensor
 
@@ -198,6 +198,13 @@ void TaskSendData( void *pvParameters );
 void setup() {
   // initialize serial communication at 115200 bits per second:
   Serial.begin(9600);
+
+  vQueueAddToRegistry(data_Queue, "Data Queue"); // just for debug
+
+
+
+
+  //JSON
   while (!Serial)
     continue;
   ////JSON
@@ -206,10 +213,8 @@ void setup() {
     delay(1000);
   }
 
-   Serial.println(F("SD library initialized"));
- 
-    Serial.println(F("Delete original file if exists!"));
-    SD.remove(filename);
+  Serial.println(F("SD library initialized"));
+
 
   //BH1750
   bool avail = BH1750.begin(BH1750_TO_GROUND);
@@ -270,7 +275,7 @@ void setup() {
   xTaskCreatePinnedToCore(
     TaskReadLux
     ,  "Read Lux"
-    ,  1024  // Stack size
+    ,  2024  // Stack size
     ,  NULL
     ,  2  // Priority
     ,  NULL
@@ -293,7 +298,7 @@ void setup() {
   xTaskCreatePinnedToCore(
     TaskReadClimate,                      /* Function to implement the task */
     "Temp & Humidity Readings ",                    /* Name of the task */
-    2000,                          /* Stack size in words */
+    3000,                          /* Stack size in words */
     NULL,                          /* Task input parameter */
     5,                              /* Priority of the task */
     &tempTaskHandle,                /* Task handle. */
@@ -327,6 +332,8 @@ void loop()
 void TaskSDWrite(void *pvParameters)  // This is a task.
 {
   (void) pvParameters;
+  dataStruct received_Data;
+
   DynamicJsonDocument doc(1024);
 
   JsonObject obj;
@@ -336,32 +343,35 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
 
   JsonArray data;
 
-      // Check if exist the array
-      if (!obj.containsKey(F("data"))) {
-        Serial.println(F("Not find data array! Crete one!"));
-        data = obj.createNestedArray(F("data"));
-      } else {
-        Serial.println(F("Find data array!"));
-        data = obj[F("data")];
-      }
-  int received_Data = 0;
+  // Check if exist the array
+  if (!obj.containsKey(F("data"))) {
+    Serial.println(F("Not find data array! Crete one!"));
+    data = obj.createNestedArray(F("data"));
+  } else {
+    Serial.println(F("Find data array!"));
+    data = obj[F("data")];
+  }
+  //int received_Data = 0;
   for (;;)
   {
     if (xQueueReceive(data_Queue, &received_Data, portMAX_DELAY) == pdTRUE) {
       Serial.print("Received From Queue:");
-      Serial.println(received_Data);
+      Serial.println(received_Data.sensor);
       // create an object to add to the array
       JsonObject objArrayData = data.createNestedObject();
 
-      objArrayData["prevNumOfElem"] = received_Data;
-      objArrayData["newNumOfElem"] = received_Data + 1;
+      switch (received_Data.sensor) {
+        case climate_ID:
+          objArrayData["Temperature"] = received_Data.qData;
+          objArrayData["Humidity"] = received_Data.qData2;
+          boolean isSaved = saveJSonToAFile(&doc, filename);
+          if (isSaved) {
+            Serial.println("File saved!");
+          } else {
+            Serial.println("Error on save File!");
+          }
+          break;
 
-      boolean isSaved = saveJSonToAFile(&doc, filename);
-
-      if (isSaved) {
-        Serial.println("File saved!");
-      } else {
-        Serial.println("Error on save File!");
       }
 
       Serial.print("Core");
@@ -444,9 +454,8 @@ void TaskReadTDS( void *pvParameters ) {
 
 
 void TaskReadClimate(void *pvParameters) {
+  dataStruct ClimateData;
   Serial.println("tempTask loop started");
-  int tempTemp = 0;
-  int tempHumidity = 0;
   for (;;)
   {
     if (tasksEnabled && !gotNewTemperature) { // Read temperature only if old data was processed already
@@ -458,9 +467,11 @@ void TaskReadClimate(void *pvParameters) {
     if (gotNewTemperature) {
       Serial.println("Sensor 1 data:");
       Serial.println("Temp: " + String(sensor1Data.temperature, 2) + "'C Humidity: " + String(sensor1Data.humidity, 1) + "%");
-      tempTemp = sensor1Data.temperature;
-      xQueueSend(data_Queue, &tempTemp, 0);
-      //tempHumidity = sensor1Data.humidity;
+      ClimateData.sensor = climate_ID;
+      ClimateData.qData = sensor1Data.temperature;
+      ClimateData.qData2 = sensor1Data.humidity;
+      xQueueSend(data_Queue, &ClimateData, 0);
+
       //xQueueSend(data_Queue, &tempHumidity, 0);
       gotNewTemperature = false;
     }
