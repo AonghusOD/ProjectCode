@@ -49,10 +49,14 @@ router.post("/getNoMessages", function (req, res, next) {
 
 router.post("/getAir", function (req, res, next) {
   airModel.find().then(function (docs) {
+    //wrong thing
     let theDoc = docs[docs.length-1]
-     console.log("/getAir: " + theDoc)
+     //console.log("/getAir: " + theDoc)
+     docs = JSON.stringify(docs)
+     console.log("/getAir: docs" + docs)
     //theDoc = JSON.stringify(theDoc)
-    res.status(200).json(theDoc)
+    //res.status(200).json(theDoc)
+    res.status(200).json(docs)
   });
 });
 
