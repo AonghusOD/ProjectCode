@@ -210,7 +210,6 @@ void TaskSDWrite( void *pvParameters );
 void TaskAir( void *pvParameters );
 void TaskReadPH( void *pvParameters );
 void TaskReadTDS( void *pvParameters );
-void TaskReadClimate( void *pvParameters );
 void TaskReadLux( void *pvParameters );
 void TaskSendData( void *pvParameters );
 
@@ -262,9 +261,7 @@ void setup() {
   gravityTds.begin();  //initialization
 
   ccs.begin();
-  // Initialize temperature sensor 1
-  dhtSensor1.setup(dhtPin1, DHTesp::DHT22);
-  // Initialize temperature sensor 2
+
   
   vTaskDelay(1000);
   // Now set up two tasks to run independently.
@@ -292,7 +289,7 @@ void setup() {
     ,  "Read TDS"
     ,  1024  // Stack size
     ,  NULL
-    ,  1  // Priority
+    ,  3  // Priority
     ,  &tdsHandle
     ,  1);
 
@@ -301,7 +298,7 @@ void setup() {
     ,  "Read Air"
     ,  2056  // Stack size
     ,  NULL
-    ,  3  // Priority
+    ,  4  // Priority
     ,  &airHandle
     ,  0);
 
@@ -323,22 +320,9 @@ void setup() {
     ,  NULL
     ,  1);
 
-  // Start task to get temperature
-  xTaskCreatePinnedToCore(
-    TaskReadClimate,                      /* Function to implement the task */
-    "Temp & Humidity Readings ",                    /* Name of the task */
-    2000,                          /* Stack size in words */
-    NULL,                          /* Task input parameter */
-    1,                              /* Priority of the task */
-    &tempTaskHandle,                /* Task handle. */
-    1);                            /* Core where the task should run */
+  /* Core where the task should run */
 
-  if (tempTaskHandle == NULL) {
-    Serial.println("[ERROR] Failed to start task for temperature update");
-  } else {
-    // Start update of environment data every 30 seconds
-    tempTicker.attach(0, triggerGetTemp);
-  }
+ 
 
   SwitchEventGroup = xEventGroupCreate();
 
@@ -354,6 +338,7 @@ void setup() {
   saveSD_EventBits = xEventGroupWaitBits(SwitchEventGroup, luxBit|phBit|airBit|tdsBit, pdTRUE, pdTRUE, portMAX_DELAY);
   if(saveSD_EventBits & (luxBit|phBit|airBit|tdsBit)){ 
     Serial.println("Bits set going to sleep");
+    printFile(filename);
     esp_deep_sleep_start();
   }
   
@@ -419,8 +404,6 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             boolean isSaved = saveJSonToAFile(&doc, filename);
             Serial.println("1 About to set climate Bit set");
             xEventGroupSetBits(SwitchEventGroup,climateBit);
-            
-            Serial.println("set climate Bit set");
             Serial.println("Climate Bit set");
             vTaskDelay(100);
             if (isSaved) {
@@ -439,6 +422,7 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             xEventGroupSetBits(SwitchEventGroup,airBit);
             Serial.println("Air Bit set");
             vTaskSuspend(airHandle);
+            vTaskSuspend(climateHandle);
             if (isSaved) {
               Serial.println("File saved!");
             } else {
@@ -590,34 +574,6 @@ void TaskReadTDS( void *pvParameters ) {
     vTaskDelay(10000);
    // vTaskSuspend( NULL );
     //vTaskDelay(100);
-  }
-}
-
-
-void TaskReadClimate(void *pvParameters) {
-  dataStruct ClimateData;
-  Serial.println("tempTask loop started");
-  for (;;)
-  {
-    if (tasksEnabled && !gotNewTemperature) { // Read temperature only if old data was processed already
-      // Reading temperature for humidity takes about 250 milliseconds!
-      // Sensor readings may also be up to 2 seconds 'old' (it's a very slow sensor)
-      sensor1Data = dhtSensor1.getTempAndHumidity();  // Read values from sensor 1
-      gotNewTemperature = true;
-    }
-    if (gotNewTemperature) {
-      Serial.println("Sensor 1 data:");
-      Serial.println("Temp: " + String(sensor1Data.temperature, 2) + "'C Humidity: " + String(sensor1Data.humidity, 1) + "%");
-      ClimateData.sensor = CLIMATE_ID;
-      ClimateData.qData = sensor1Data.temperature;
-      ClimateData.qData2 = sensor1Data.humidity;
-      xQueueSend(data_Queue, &ClimateData, 0);
-      vTaskDelay(10000);
-      //xQueueSend(data_Queue, &tempHumidity, 0);
-      gotNewTemperature = false;
-    }
-    //vTaskSuspend( NULL );
-    vTaskDelay(100);  // one tick delay (15ms) in between reads for stability
   }
 }
 
