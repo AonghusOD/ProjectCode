@@ -351,8 +351,8 @@ void setup() {
  
   esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
   EventBits_t saveSD_EventBits;
-  saveSD_EventBits = xEventGroupWaitBits(SwitchEventGroup, luxBit|phBit|airBit, pdTRUE, pdTRUE, portMAX_DELAY);
-  if(saveSD_EventBits & (luxBit|phBit|airBit)){ 
+  saveSD_EventBits = xEventGroupWaitBits(SwitchEventGroup, luxBit|phBit|airBit|tdsBit, pdTRUE, pdTRUE, portMAX_DELAY);
+  if(saveSD_EventBits & (luxBit|phBit|airBit|tdsBit)){ 
     Serial.println("Bits set going to sleep");
     esp_deep_sleep_start();
   }
@@ -438,7 +438,7 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             Serial.println("2 About to set air Bit set");
             xEventGroupSetBits(SwitchEventGroup,airBit);
             Serial.println("Air Bit set");
-            vTaskDelay(100);
+            vTaskSuspend(airHandle);
             if (isSaved) {
               Serial.println("File saved!");
             } else {
@@ -454,7 +454,7 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             xEventGroupSetBits(SwitchEventGroup,phBit);
             Serial.println("About to set ph Bit set");
             Serial.println("PH Bit set");
-            //vTaskSuspend(phHandle);
+            vTaskSuspend(phHandle);
             if (isSaved) {
               Serial.println("File saved!");
             } else {
@@ -467,9 +467,9 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             objArrayData["TDS"] = received_Data.qData;
             boolean isSaved = saveJSonToAFile(&doc, filename);
             Serial.println("4 About to set tds Bit set");
-            //xEventGroupSetBits(SwitchEventGroup,tdsBit);
+            xEventGroupSetBits(SwitchEventGroup,tdsBit);
             Serial.println("TDS Bit set");
-            
+            vTaskSuspend(tdsHandle);
             if (isSaved) {
               Serial.println("File saved!");
             } else {
@@ -484,7 +484,7 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             Serial.println("5 About to set lux Bit set");
             xEventGroupSetBits(SwitchEventGroup,luxBit);
             Serial.println("lux Bit set");
-            //vTaskSuspend(luxHandle);
+            vTaskSuspend(luxHandle);
             if (isSaved) {
               Serial.println("File saved!");
             } else {
