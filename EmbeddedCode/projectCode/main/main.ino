@@ -24,6 +24,8 @@
 #include <freertos/task.h>
 #include <freertos/queue.h>
 #include <freertos/event_groups.h>
+#include <freertos/timers.h>
+
 
 #include "Adafruit_CCS811.h"
 #include "main.h"
@@ -38,12 +40,18 @@
 //saves the bootCount variable on the RTC memory.
 RTC_DATA_ATTR int bootCount = 0;
 
+uint32_t sec = 0;
+
 #define uS_TO_S_FACTOR 1000000ULL  /* Conversion factor for micro seconds to seconds */
 #define TIME_TO_SLEEP  20        /* Time ESP32 will go to sleep (in seconds) */
 
 #define DHTTYPE DHT22   // DHT 22  (AM2302), AM2321
 #define DHTPIN 17     // Digital pin connected to the DHT sensor
 EventGroupHandle_t SwitchEventGroup = NULL;
+
+TimerHandle_t AutoReloadTimerHandle = NULL;
+void AutoReloadCallback(TimerHandle_t xTimer);
+
 #define climateBit (1<<0)
 #define airBit (1<<1)
 #define phBit (1<<2)
@@ -75,7 +83,6 @@ const int chipSelect = 5;
 const char *filename = "/test.jso";  // <- SD library uses 8.3 filenames
 
 File myFileSDCart;
-
 JsonObject getJSonFromFile(DynamicJsonDocument *doc, String filename, bool forceCleanONJsonError = true ) {
   // open the file for reading:
   myFileSDCart = SD.open(filename);
@@ -161,7 +168,7 @@ void printFile(const char *filename) {
 }
 //----------------------------------------------------------------------
 
-QueueHandle_t data_Queue = xQueueCreate(50, sizeof(dataStruct));
+QueueHandle_t data_Queue = xQueueCreate(15, sizeof(dataStruct));
 
 hp_BH1750 BH1750;       //  create the sensor
 
@@ -201,12 +208,8 @@ void setup() {
   //vTaskResume(luxHandle);
 
   // initialize serial communication at 115200 bits per second:
-
-
+  
   vQueueAddToRegistry(data_Queue, "Data Queue"); // just for debug
-
-
-
 
   //JSON
   while (!Serial)
@@ -219,8 +222,8 @@ void setup() {
 
   Serial.println(F("SD library initialized"));
 
-  Serial.println(F("Delete original file if exists!"));
-  SD.remove(filename);
+  //Serial.println(F("Delete original file if exists!"));
+  //SD.remove(filename);
   //BH1750
   bool avail = BH1750.begin(BH1750_TO_GROUND);
 
@@ -275,7 +278,7 @@ void setup() {
     ,  "Read Air"
     ,  2056  // Stack size
     ,  NULL
-    ,  4  // Priority
+    ,  3  // Priority
     ,  &airHandle
     ,  0);
 
@@ -306,17 +309,23 @@ void setup() {
     ,  NULL
     ,  1);/* Core where the task should run */
 
+    AutoReloadTimerHandle = xTimerCreate("Auto Reload Timer", pdMS_TO_TICKS(1000), pdTRUE, 0, AutoReloadCallback);
+    xTimerStart(AutoReloadTimerHandle, 0);
+
+    
   SwitchEventGroup = xEventGroupCreate();
   //Sleep-Timer Stuff 
   
   //Increment boot number and print it every reboot
   ++bootCount;
   Serial.println("Boot number: " + String(bootCount));
- 
+
+  
   esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
   EventBits_t saveSD_EventBits;
   saveSD_EventBits = xEventGroupWaitBits(SwitchEventGroup, luxBit|phBit|airBit|tdsBit|climateBit, pdTRUE, pdTRUE, portMAX_DELAY);
-  if(saveSD_EventBits & (luxBit|phBit|airBit|tdsBit|climateBit)){ 
+  if((sec == pdMS_TO_TICKS(5000) |(saveSD_EventBits & (luxBit|phBit|airBit|tdsBit|climateBit)))){ 
+    Serial.print(sec);
     Serial.println("Bits set going to sleep");
     printFile(filename);
     esp_deep_sleep_start();
@@ -347,7 +356,7 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
   (void) pvParameters;
   dataStruct received_Data;
 
-  DynamicJsonDocument doc(1024);
+  DynamicJsonDocument doc(10024);
 
   JsonObject obj;
   obj = getJSonFromFile(&doc, filename);
@@ -379,16 +388,10 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             objArrayData["Temperature"] = received_Data.qData;
             objArrayData["Humidity"] = received_Data.qData2;
             boolean isSaved = saveJSonToAFile(&doc, filename);
-            Serial.println("1 About to set climate Bit set");
             xEventGroupSetBits(SwitchEventGroup,climateBit);
+            vTaskSuspend(climateHandle);
             Serial.println("Climate Bit set");
-             vTaskSuspend(climateHandle);
             vTaskDelay(100);
-            if (isSaved) {
-              Serial.println("File saved!");
-            } else {
-              Serial.println("Error on save File!");
-            }
             break;
           }
         case AIR_ID:
@@ -396,62 +399,36 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             objArrayData["CO2"] = received_Data.qData;
             objArrayData["HVOC"] = received_Data.qData2;
             boolean isSaved = saveJSonToAFile(&doc, filename);
-            Serial.println("2 About to set air Bit set");
             xEventGroupSetBits(SwitchEventGroup,airBit);
-            Serial.println("Air Bit set");
             vTaskSuspend(airHandle);
-            if (isSaved) {
-              Serial.println("File saved!");
-            } else {
-              Serial.println("Error on save File!");
-            }
+            Serial.println("Air Bit set");
             break;
           }
         case PH_ID:
           {
             objArrayData["PH"] = received_Data.qData;
             boolean isSaved = saveJSonToAFile(&doc, filename);
-            Serial.println("3 About to set ph Bit set");
             xEventGroupSetBits(SwitchEventGroup,phBit);
-            Serial.println("About to set ph Bit set");
-            Serial.println("PH Bit set");
             vTaskSuspend(phHandle);
-            if (isSaved) {
-              Serial.println("File saved!");
-            } else {
-              Serial.println("Error on save File!");
-            }
+            Serial.println("PH Bit set");
             break;
           }
         case TDS_ID:
           {
             objArrayData["TDS"] = received_Data.qData;
             boolean isSaved = saveJSonToAFile(&doc, filename);
-            Serial.println("4 About to set tds Bit set");
             xEventGroupSetBits(SwitchEventGroup,tdsBit);
-            Serial.println("TDS Bit set");
             vTaskSuspend(tdsHandle);
-            if (isSaved) {
-              Serial.println("File saved!");
-            } else {
-              Serial.println("Error on save File!");
-            }
+            Serial.println("TDS Bit set");
             break;
           }
         case LUX_ID:
           {
             objArrayData["LUX"] = received_Data.qData;
             boolean isSaved = saveJSonToAFile(&doc, filename);
-            Serial.println("5 About to set lux Bit set");
             xEventGroupSetBits(SwitchEventGroup,luxBit);
-            Serial.println("lux Bit set");
             vTaskSuspend(luxHandle);
-            if (isSaved) {
-              Serial.println("File saved!");
-            } else {
-              Serial.println("Error on save File!");
-            }
-            break;
+            Serial.println("lux Bit set");
           }
       }
 
@@ -614,6 +591,12 @@ void climateTask(void *pvParameters)  // This is a task.
     
   }
 }
+
+void AutoReloadCallback(TimerHandle_t xTimer) {
+  Serial.println(sec);
+  sec++;
+}
+
 
 void TaskSendData(void *pvParameters)  // This is a task.
 {
