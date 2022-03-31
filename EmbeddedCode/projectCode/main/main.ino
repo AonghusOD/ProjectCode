@@ -32,6 +32,7 @@
 #include "GravityTDS.h"
 #include <Ticker.h>
 #include "DHTesp.h"
+#include "DHT.h"
 #include <Arduino.h>
 #include <hp_BH1750.h>  //  include the library
 //saves the bootCount variable on the RTC memory.
@@ -40,6 +41,8 @@ RTC_DATA_ATTR int bootCount = 0;
 #define uS_TO_S_FACTOR 1000000ULL  /* Conversion factor for micro seconds to seconds */
 #define TIME_TO_SLEEP  20        /* Time ESP32 will go to sleep (in seconds) */
 
+#define DHTTYPE DHT22   // DHT 22  (AM2302), AM2321
+#define DHTPIN 17     // Digital pin connected to the DHT sensor
 EventGroupHandle_t SwitchEventGroup = NULL;
 #define climateBit (1<<0)
 #define airBit (1<<1)
@@ -65,6 +68,7 @@ TaskHandle_t phHandle;
 TaskHandle_t tdsHandle;
 TaskHandle_t luxHandle;
 
+DHT dht(DHTPIN, DHTTYPE);
 ///////////////////////////////////////JSON STUFF
 const int chipSelect = 5;
 
@@ -161,34 +165,6 @@ QueueHandle_t data_Queue = xQueueCreate(50, sizeof(dataStruct));
 
 hp_BH1750 BH1750;       //  create the sensor
 
-
-//DHT22
-DHTesp dhtSensor1;
-/** Task handle for the light value read task */
-TaskHandle_t tempTaskHandle = NULL;
-/** Pin number for DHT11 1 data pin */
-int dhtPin1 = 17;
-
-Ticker tempTicker;
-/** Flags for temperature readings finished */
-bool gotNewTemperature = false;
-/** Data from sensor 1 */
-TempAndHumidity sensor1Data;
-
-/* Flag if main loop is running */
-bool tasksEnabled = false;
-
-/**
-   triggerGetTemp
-   Sets flag dhtUpdated to true for handling in loop()
-   called by Ticker tempTicker
-*/
-void triggerGetTemp() {
-  if (tempTaskHandle != NULL) {
-    xTaskResumeFromISR(tempTaskHandle);
-  }
-}
-
 //PH
 DFRobot_ESP_PH ph;
 #define ESPADC 4096.0   //the esp Analog Digital Convertion value
@@ -212,6 +188,7 @@ void TaskReadPH( void *pvParameters );
 void TaskReadTDS( void *pvParameters );
 void TaskReadLux( void *pvParameters );
 void TaskSendData( void *pvParameters );
+void climateTask(void *pvParameters);
 
 // the setup function runs once when you press reset or power the board
 void setup() {
@@ -242,8 +219,8 @@ void setup() {
 
   Serial.println(F("SD library initialized"));
 
-//  Serial.println(F("Delete original file if exists!"));
-//  SD.remove(filename);
+  Serial.println(F("Delete original file if exists!"));
+  SD.remove(filename);
   //BH1750
   bool avail = BH1750.begin(BH1750_TO_GROUND);
 
@@ -261,7 +238,7 @@ void setup() {
   gravityTds.begin();  //initialization
 
   ccs.begin();
-
+  dht.begin();
   
   vTaskDelay(1000);
   // Now set up two tasks to run independently.
@@ -311,6 +288,15 @@ void setup() {
     ,  &luxHandle
     ,  1);
 
+    xTaskCreatePinnedToCore(
+    climateTask
+    ,  "Read Climate"
+    ,  3024  // Stack size
+    ,  NULL
+    ,  3  // Priority
+    ,  &climateHandle
+    ,  1);
+
   xTaskCreatePinnedToCore(
     TaskSendData
     ,  "Send Data"
@@ -318,15 +304,9 @@ void setup() {
     ,  NULL
     ,  1  // Priority
     ,  NULL
-    ,  1);
-
-  /* Core where the task should run */
-
- 
+    ,  1);/* Core where the task should run */
 
   SwitchEventGroup = xEventGroupCreate();
-
-
   //Sleep-Timer Stuff 
   
   //Increment boot number and print it every reboot
@@ -335,17 +315,14 @@ void setup() {
  
   esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
   EventBits_t saveSD_EventBits;
-  saveSD_EventBits = xEventGroupWaitBits(SwitchEventGroup, luxBit|phBit|airBit|tdsBit, pdTRUE, pdTRUE, portMAX_DELAY);
-  if(saveSD_EventBits & (luxBit|phBit|airBit|tdsBit)){ 
+  saveSD_EventBits = xEventGroupWaitBits(SwitchEventGroup, luxBit|phBit|airBit|tdsBit|climateBit, pdTRUE, pdTRUE, portMAX_DELAY);
+  if(saveSD_EventBits & (luxBit|phBit|airBit|tdsBit|climateBit)){ 
     Serial.println("Bits set going to sleep");
     printFile(filename);
     esp_deep_sleep_start();
   }
   
-    
-  // Signal end of setup() to tasks
-  tasksEnabled = true;
-// 
+
 //  
 // Serial.println("Setup ESP32 to sleep for every " + String(TIME_TO_SLEEP) +
 //  " Seconds");
@@ -405,6 +382,7 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             Serial.println("1 About to set climate Bit set");
             xEventGroupSetBits(SwitchEventGroup,climateBit);
             Serial.println("Climate Bit set");
+             vTaskSuspend(climateHandle);
             vTaskDelay(100);
             if (isSaved) {
               Serial.println("File saved!");
@@ -422,7 +400,6 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             xEventGroupSetBits(SwitchEventGroup,airBit);
             Serial.println("Air Bit set");
             vTaskSuspend(airHandle);
-            vTaskSuspend(climateHandle);
             if (isSaved) {
               Serial.println("File saved!");
             } else {
@@ -596,6 +573,45 @@ void TaskReadLux( void *pvParameters )
     vTaskDelay(10000);
     //vTaskSuspend( NULL );
     // one tick delay (15ms) in between reads for stability
+  }
+}
+
+void climateTask(void *pvParameters)  // This is a task.
+{
+  //Send data to database
+  dataStruct ClimateData;
+  for (;;)
+  {
+    delay(2000);
+  
+    // Reading temperature or humidity takes about 250 milliseconds!
+    // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+    float h = dht.readHumidity();
+    // Read temperature as Celsius (the default)
+    float t = dht.readTemperature();
+    // Read temperature as Fahrenheit (isFahrenheit = true)
+    float f = dht.readTemperature(true);
+  
+    // Check if any reads failed and exit early (to try again).
+    if (isnan(h) || isnan(t) || isnan(f)) {
+      Serial.println(F("Failed to read from DHT sensor!"));
+      return;
+    }
+  
+    // Compute heat index in Fahrenheit (the default)
+    float hif = dht.computeHeatIndex(f, h);
+    // Compute heat index in Celsius (isFahreheit = false)
+    float hic = dht.computeHeatIndex(t, h, false);
+    ClimateData.sensor = CLIMATE_ID;
+    ClimateData.qData = t;
+    ClimateData.qData2 = h;
+    xQueueSend(data_Queue, &ClimateData, 0);
+    Serial.print(F("Humidity: "));
+    Serial.print(h);
+    Serial.print(F("%  Temperature: "));
+    Serial.print(t);
+    Serial.print(F("°C "));
+    
   }
 }
 
