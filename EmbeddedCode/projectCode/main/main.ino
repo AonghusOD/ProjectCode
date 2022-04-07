@@ -24,7 +24,8 @@
 #include <freertos/task.h>
 #include <freertos/queue.h>
 #include <freertos/event_groups.h>
-#include <freertos/timers.h>
+#include <freertos/semphr.h>
+
 
 
 #include "Adafruit_CCS811.h"
@@ -40,18 +41,14 @@
 //saves the bootCount variable on the RTC memory.
 RTC_DATA_ATTR int bootCount = 0;
 
-uint32_t sec = 0;
-
 #define uS_TO_S_FACTOR 1000000ULL  /* Conversion factor for micro seconds to seconds */
 #define TIME_TO_SLEEP  20        /* Time ESP32 will go to sleep (in seconds) */
+
+SemaphoreHandle_t Air_Semaphore = NULL;
 
 #define DHTTYPE DHT22   // DHT 22  (AM2302), AM2321
 #define DHTPIN 17     // Digital pin connected to the DHT sensor
 EventGroupHandle_t SwitchEventGroup = NULL;
-
-TimerHandle_t AutoReloadTimerHandle = NULL;
-void AutoReloadCallback(TimerHandle_t xTimer);
-
 #define climateBit (1<<0)
 #define airBit (1<<1)
 #define phBit (1<<2)
@@ -83,6 +80,7 @@ const int chipSelect = 5;
 const char *filename = "/test.jso";  // <- SD library uses 8.3 filenames
 
 File myFileSDCart;
+
 JsonObject getJSonFromFile(DynamicJsonDocument *doc, String filename, bool forceCleanONJsonError = true ) {
   // open the file for reading:
   myFileSDCart = SD.open(filename);
@@ -200,21 +198,25 @@ void climateTask(void *pvParameters);
 // the setup function runs once when you press reset or power the board
 void setup() {
   Serial.begin(9600);
-  
-//  vTaskSuspend(climateHandle);
-//  vTaskSuspend(airHandle);
-//  vTaskSuspend(phHandle);
-//  vTaskSuspend(tdsHandle);
+  Air_Semaphore = xSemaphoreCreateBinary();
+  //  vTaskSuspend(climateHandle);
+  //  vTaskSuspend(airHandle);
+  //  vTaskSuspend(phHandle);
+  //  vTaskSuspend(tdsHandle);
   //vTaskResume(luxHandle);
 
   // initialize serial communication at 115200 bits per second:
-  
+
+
   vQueueAddToRegistry(data_Queue, "Data Queue"); // just for debug
+
+
+
 
   //JSON
   while (!Serial)
     continue;
- 
+
   while (!SD.begin(chipSelect)) {
     Serial.println(F("Failed to initialize SD library"));
     delay(1000);
@@ -222,8 +224,8 @@ void setup() {
 
   Serial.println(F("SD library initialized"));
 
-  //Serial.println(F("Delete original file if exists!"));
-  //SD.remove(filename);
+  Serial.println(F("Delete original file if exists!"));
+  SD.remove(filename);
   //BH1750
   bool avail = BH1750.begin(BH1750_TO_GROUND);
 
@@ -242,7 +244,7 @@ void setup() {
 
   ccs.begin();
   dht.begin();
-  
+
   vTaskDelay(1000);
   // Now set up two tasks to run independently.
   //
@@ -278,7 +280,7 @@ void setup() {
     ,  "Read Air"
     ,  2056  // Stack size
     ,  NULL
-    ,  3  // Priority
+    ,  4  // Priority
     ,  &airHandle
     ,  0);
 
@@ -291,7 +293,7 @@ void setup() {
     ,  &luxHandle
     ,  1);
 
-    xTaskCreatePinnedToCore(
+  xTaskCreatePinnedToCore(
     climateTask
     ,  "Read Climate"
     ,  3024  // Stack size
@@ -309,33 +311,28 @@ void setup() {
     ,  NULL
     ,  1);/* Core where the task should run */
 
-    AutoReloadTimerHandle = xTimerCreate("Auto Reload Timer", pdMS_TO_TICKS(1000), pdTRUE, 0, AutoReloadCallback);
-    xTimerStart(AutoReloadTimerHandle, 0);
-
-    
-  SwitchEventGroup = xEventGroupCreate();
-  //Sleep-Timer Stuff 
   
+  SwitchEventGroup = xEventGroupCreate();
+  //Sleep-Timer Stuff
+
   //Increment boot number and print it every reboot
   ++bootCount;
   Serial.println("Boot number: " + String(bootCount));
 
-  
   esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
   EventBits_t saveSD_EventBits;
-  saveSD_EventBits = xEventGroupWaitBits(SwitchEventGroup, luxBit|phBit|airBit|tdsBit|climateBit, pdTRUE, pdTRUE, portMAX_DELAY);
-  if((sec == pdMS_TO_TICKS(5000) |(saveSD_EventBits & (luxBit|phBit|airBit|tdsBit|climateBit)))){ 
-    Serial.print(sec);
+  saveSD_EventBits = xEventGroupWaitBits(SwitchEventGroup, luxBit | phBit | airBit | tdsBit | climateBit, pdTRUE, pdTRUE, portMAX_DELAY);
+  if (saveSD_EventBits & (luxBit | phBit | airBit | tdsBit | climateBit)) {
     Serial.println("Bits set going to sleep");
     printFile(filename);
     esp_deep_sleep_start();
   }
-  
 
-//  
-// Serial.println("Setup ESP32 to sleep for every " + String(TIME_TO_SLEEP) +
-//  " Seconds");
-//  esp_deep_sleep_start();
+
+  //
+  // Serial.println("Setup ESP32 to sleep for every " + String(TIME_TO_SLEEP) +
+  //  " Seconds");
+  //  esp_deep_sleep_start();
 
   // Now the task scheduler, which takes over control of scheduling individual tasks, is automatically started.
 }
@@ -356,7 +353,7 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
   (void) pvParameters;
   dataStruct received_Data;
 
-  DynamicJsonDocument doc(10024);
+  DynamicJsonDocument doc(1024);
 
   JsonObject obj;
   obj = getJSonFromFile(&doc, filename);
@@ -388,10 +385,16 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             objArrayData["Temperature"] = received_Data.qData;
             objArrayData["Humidity"] = received_Data.qData2;
             boolean isSaved = saveJSonToAFile(&doc, filename);
-            xEventGroupSetBits(SwitchEventGroup,climateBit);
-            vTaskSuspend(climateHandle);
+            Serial.println("1 About to set climate Bit set");
+            xEventGroupSetBits(SwitchEventGroup, climateBit);
             Serial.println("Climate Bit set");
+            vTaskSuspend(climateHandle);
             vTaskDelay(100);
+            if (isSaved) {
+              Serial.println("File saved!");
+            } else {
+              Serial.println("Error on save File!");
+            }
             break;
           }
         case AIR_ID:
@@ -399,44 +402,71 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             objArrayData["CO2"] = received_Data.qData;
             objArrayData["HVOC"] = received_Data.qData2;
             boolean isSaved = saveJSonToAFile(&doc, filename);
-            xEventGroupSetBits(SwitchEventGroup,airBit);
-            vTaskSuspend(airHandle);
-            Serial.println("Air Bit set");
+            Serial.println("2 About to set air Bit set");
+            //xEventGroupSetBits(SwitchEventGroup, airBit);
+            Serial.println("Air Bit set and give semaphore");
+            xSemaphoreGive( Air_Semaphore );
+            //vTaskSuspend(airHandle);
+            if (isSaved) {
+              Serial.println("File saved!");
+            } else {
+              Serial.println("Error on save File!");
+            }
             break;
           }
         case PH_ID:
           {
             objArrayData["PH"] = received_Data.qData;
             boolean isSaved = saveJSonToAFile(&doc, filename);
-            xEventGroupSetBits(SwitchEventGroup,phBit);
-            vTaskSuspend(phHandle);
+            Serial.println("3 About to set ph Bit set");
+            xEventGroupSetBits(SwitchEventGroup, phBit);
+            Serial.println("About to set ph Bit set");
             Serial.println("PH Bit set");
+            vTaskSuspend(phHandle);
+            if (isSaved) {
+              Serial.println("File saved!");
+            } else {
+              Serial.println("Error on save File!");
+            }
             break;
           }
         case TDS_ID:
           {
             objArrayData["TDS"] = received_Data.qData;
             boolean isSaved = saveJSonToAFile(&doc, filename);
-            xEventGroupSetBits(SwitchEventGroup,tdsBit);
-            vTaskSuspend(tdsHandle);
+            Serial.println("4 About to set tds Bit set");
+            xEventGroupSetBits(SwitchEventGroup, tdsBit);
             Serial.println("TDS Bit set");
+            vTaskSuspend(tdsHandle);
+            if (isSaved) {
+              Serial.println("File saved!");
+            } else {
+              Serial.println("Error on save File!");
+            }
             break;
           }
         case LUX_ID:
           {
             objArrayData["LUX"] = received_Data.qData;
             boolean isSaved = saveJSonToAFile(&doc, filename);
-            xEventGroupSetBits(SwitchEventGroup,luxBit);
-            vTaskSuspend(luxHandle);
+            Serial.println("5 About to set lux Bit set");
+            xEventGroupSetBits(SwitchEventGroup, luxBit);
             Serial.println("lux Bit set");
+            vTaskSuspend(luxHandle);
+            if (isSaved) {
+              Serial.println("File saved!");
+            } else {
+              Serial.println("Error on save File!");
+            }
+            break;
           }
       }
 
       Serial.print("Core");
       Serial.println(xPortGetCoreID());
-//      // Print test file
-//      Serial.println(F("Print test file..."));
-//      printFile(filename);
+      //      // Print test file
+      //      Serial.println(F("Print test file..."));
+      //      printFile(filename);
       vTaskDelay(1000);  // one tick delay (15ms) in between reads for stability
     }
   }
@@ -445,7 +475,7 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
 void TaskAir(void *pvParameters)  // This is a task.
 {
   (void) pvParameters;
-  vTaskDelay(1000);
+  
   dataStruct AirData;
   if (!ccs.begin()) {
     Serial.println("Failed to start sensor! Please check your wiring.");
@@ -457,9 +487,11 @@ void TaskAir(void *pvParameters)  // This is a task.
 
   for (;;)
   {
-    
+
     if (ccs.available()) {
+      
       if (!ccs.readData()) {
+        vTaskDelay(10000);
         Serial.print("CO2: ................");
         Serial.print(ccs.geteCO2());
         Serial.print("ppm, TVOC: ");
@@ -468,7 +500,6 @@ void TaskAir(void *pvParameters)  // This is a task.
         AirData.qData = ccs.geteCO2();
         AirData.qData2 = ccs.getTVOC();
         xQueueSend(data_Queue, &AirData, 0);
-        vTaskDelay(10000);
       }
       else {
         Serial.println("ERROR!");
@@ -478,7 +509,7 @@ void TaskAir(void *pvParameters)  // This is a task.
     Serial.print("Core");
     Serial.println(xPortGetCoreID());
     //vTaskSuspend( NULL );
-      // one tick delay (15ms) in between reads for stability
+    // one tick delay (15ms) in between reads for stability
   }
 }
 
@@ -506,7 +537,7 @@ void TaskReadPH( void *pvParameters )
       vTaskDelay(10000);
     }
     //vTaskSuspend( NULL );
-   // vTaskDelay(100);  // one tick delay (15ms) in between reads for stability
+    // vTaskDelay(100);  // one tick delay (15ms) in between reads for stability
   }
 }
 
@@ -526,7 +557,7 @@ void TaskReadTDS( void *pvParameters ) {
     TDSData.qData = tdsValue;
     xQueueSend(data_Queue, &TDSData, 0);
     vTaskDelay(10000);
-   // vTaskSuspend( NULL );
+    // vTaskSuspend( NULL );
     //vTaskDelay(100);
   }
 }
@@ -536,20 +567,22 @@ void TaskReadLux( void *pvParameters )
   dataStruct LuxData;
   for (;;)
   {
-     vTaskDelay(100);
-    // put your main code here, to run repeatedly:
-    BH1750.start();   //starts a measurement
-    float lux = BH1750.getLux(); //  waits until a conversion finished
-    Serial.print("Light..............................");
-    Serial.println(lux);
-    Serial.print("Core");
-    Serial.println(xPortGetCoreID());
-    LuxData.sensor = LUX_ID;
-    LuxData.qData = lux;
-    xQueueSend(data_Queue, &LuxData, 0);
-    vTaskDelay(10000);
-    //vTaskSuspend( NULL );
-    // one tick delay (15ms) in between reads for stability
+    if ( xSemaphoreTake( Air_Semaphore, ( TickType_t ) 5 ) == pdTRUE )
+    {
+      BH1750.start();   //starts a measurement
+      float lux = BH1750.getLux(); //  waits until a conversion finished
+      Serial.print("Light..............................");
+      Serial.println(lux);
+      Serial.print("Core");
+      Serial.println(xPortGetCoreID());
+      LuxData.sensor = LUX_ID;
+      LuxData.qData = lux;
+      xQueueSend(data_Queue, &LuxData, 0);
+      }
+      vTaskDelay(10000);
+      //vTaskSuspend( NULL );
+      // one tick delay (15ms) in between reads for stability
+    
   }
 }
 
@@ -560,7 +593,7 @@ void climateTask(void *pvParameters)  // This is a task.
   for (;;)
   {
     delay(2000);
-  
+
     // Reading temperature or humidity takes about 250 milliseconds!
     // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
     float h = dht.readHumidity();
@@ -568,13 +601,13 @@ void climateTask(void *pvParameters)  // This is a task.
     float t = dht.readTemperature();
     // Read temperature as Fahrenheit (isFahrenheit = true)
     float f = dht.readTemperature(true);
-  
+
     // Check if any reads failed and exit early (to try again).
     if (isnan(h) || isnan(t) || isnan(f)) {
       Serial.println(F("Failed to read from DHT sensor!"));
       return;
     }
-  
+
     // Compute heat index in Fahrenheit (the default)
     float hif = dht.computeHeatIndex(f, h);
     // Compute heat index in Celsius (isFahreheit = false)
@@ -588,15 +621,9 @@ void climateTask(void *pvParameters)  // This is a task.
     Serial.print(F("%  Temperature: "));
     Serial.print(t);
     Serial.print(F("°C "));
-    
+
   }
 }
-
-void AutoReloadCallback(TimerHandle_t xTimer) {
-  Serial.println(sec);
-  sec++;
-}
-
 
 void TaskSendData(void *pvParameters)  // This is a task.
 {
