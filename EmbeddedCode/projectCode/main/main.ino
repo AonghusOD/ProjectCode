@@ -200,7 +200,6 @@ void TaskAir( void *pvParameters );
 void TaskReadPH( void *pvParameters );
 void TaskReadTDS( void *pvParameters );
 void TaskReadLux( void *pvParameters );
-void TaskSendData( void *pvParameters );
 void climateTask(void *pvParameters);
 
 // the setup function runs once when you press reset or power the board
@@ -232,8 +231,8 @@ void setup() {
 
   Serial.println(F("SD library initialized"));
 
-  //Serial.println(F("Delete original file if exists!"));
-  //SD.remove(filename);
+  Serial.println(F("Delete original file if exists!"));
+  SD.remove(filename);
   //BH1750
   bool avail = BH1750.begin(BH1750_TO_GROUND);
 
@@ -288,9 +287,9 @@ void setup() {
     ,  "Read Air"
     ,  2056  // Stack size
     ,  NULL
-    ,  4  // Priority
+    ,  1  // Priority
     ,  &airHandle
-    ,  0);
+    ,  1);
 
   xTaskCreatePinnedToCore(
     TaskReadLux
@@ -309,15 +308,6 @@ void setup() {
     ,  3  // Priority
     ,  &climateHandle
     ,  1);
-
-  xTaskCreatePinnedToCore(
-    TaskSendData
-    ,  "Send Data"
-    ,  1024  // Stack size
-    ,  NULL
-    ,  1  // Priority
-    ,  NULL
-    ,  1);/* Core where the task should run */
 
   AutoReloadTimerHandle = xTimerCreate("Auto Reload Timer", pdMS_TO_TICKS(1000), pdTRUE, 0, AutoReloadCallback);
   xTimerStart(AutoReloadTimerHandle, 0);
@@ -364,7 +354,7 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
 {
   (void) pvParameters;
   dataStruct received_Data;
-
+  uint8_t air_loop = 0;
   DynamicJsonDocument doc(1024);
 
   JsonObject obj;
@@ -397,9 +387,9 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             objArrayData["Temperature"] = received_Data.qData;
             objArrayData["Humidity"] = received_Data.qData2;
             boolean isSaved = saveJSonToAFile(&doc, filename);
-            Serial.println("1 About to set climate Bit set");
+            //Serial.println("1 About to set climate Bit set");
             xEventGroupSetBits(SwitchEventGroup, climateBit);
-            Serial.println("Climate Bit set");
+            Serial.println("1 Climate Bit set");
             vTaskSuspend(climateHandle);
             vTaskDelay(100);
             if (isSaved) {
@@ -411,29 +401,37 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
           }
         case AIR_ID:
           {
-            objArrayData["CO2"] = received_Data.qData;
-            objArrayData["HVOC"] = received_Data.qData2;
-            boolean isSaved = saveJSonToAFile(&doc, filename);
-            Serial.println("2 About to set air Bit set");
-            //xEventGroupSetBits(SwitchEventGroup, airBit);
-            Serial.println("Air Bit set and give semaphore");
-            xSemaphoreGive( Air_Semaphore );
-            //vTaskSuspend(airHandle);
-            if (isSaved) {
+            
+            
+            //Serial.println("Value of Sec", &sec);
+            air_loop++;
+            
+            Serial.println("air_loop");
+            Serial.println(air_loop);
+            if(air_loop == 10){
+              objArrayData["CO2"] = received_Data.qData;
+              objArrayData["HVOC"] = received_Data.qData2;
+              boolean isSaved = saveJSonToAFile(&doc, filename);
+              //Serial.println("2 About to set air Bit set");
+              xEventGroupSetBits(SwitchEventGroup, airBit);
+              Serial.println("2 Air Bit set and give semaphore");
+              vTaskSuspend(airHandle);
+              if (isSaved) {
               Serial.println("File saved!");
             } else {
               Serial.println("Error on save File!");
             }
+            }
+            
             break;
           }
         case PH_ID:
           {
             objArrayData["PH"] = received_Data.qData;
             boolean isSaved = saveJSonToAFile(&doc, filename);
-            Serial.println("3 About to set ph Bit set");
+            //Serial.println("3 About to set ph Bit set");
             xEventGroupSetBits(SwitchEventGroup, phBit);
-            Serial.println("About to set ph Bit set");
-            Serial.println("PH Bit set");
+            Serial.println("3 PH Bit set");
             vTaskSuspend(phHandle);
             if (isSaved) {
               Serial.println("File saved!");
@@ -446,9 +444,9 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
           {
             objArrayData["TDS"] = received_Data.qData;
             boolean isSaved = saveJSonToAFile(&doc, filename);
-            Serial.println("4 About to set tds Bit set");
+            //Serial.println("4 About to set tds Bit set");
             xEventGroupSetBits(SwitchEventGroup, tdsBit);
-            Serial.println("TDS Bit set");
+            Serial.println("4 TDS Bit set");
             vTaskSuspend(tdsHandle);
             if (isSaved) {
               Serial.println("File saved!");
@@ -461,9 +459,9 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
           {
             objArrayData["LUX"] = received_Data.qData;
             boolean isSaved = saveJSonToAFile(&doc, filename);
-            Serial.println("5 About to set lux Bit set");
+            //Serial.println("5 About to set lux Bit set");
             xEventGroupSetBits(SwitchEventGroup, luxBit);
-            Serial.println("lux Bit set");
+            Serial.println("5 lux Bit set");
             vTaskSuspend(luxHandle);
             if (isSaved) {
               Serial.println("File saved!");
@@ -503,11 +501,7 @@ void TaskAir(void *pvParameters)  // This is a task.
     if (ccs.available()) {
       
       if (!ccs.readData()) {
-        vTaskDelay(10000);
-        Serial.print("CO2: ................");
-        Serial.print(ccs.geteCO2());
-        Serial.print("ppm, TVOC: ");
-        Serial.println(ccs.getTVOC());
+        vTaskDelay(1000);
         AirData.sensor = AIR_ID;
         AirData.qData = ccs.geteCO2();
         AirData.qData2 = ccs.getTVOC();
@@ -555,6 +549,7 @@ void TaskReadPH( void *pvParameters )
 
 void TaskReadTDS( void *pvParameters ) {
   dataStruct TDSData;
+  xSemaphoreGive( Air_Semaphore );
   for (;;) {
     vTaskDelay(1000);
     //temperature = readTemperature();  //add your temperature sensor and read it
@@ -639,19 +634,11 @@ void climateTask(void *pvParameters)  // This is a task.
 
 void AutoReloadCallback(TimerHandle_t xTimer) {
   dataStruct TimeOutData;
-  Serial.println(sec);
+  //Serial.println(sec);
   sec++;
   if (sec == 10)
   Serial.println("10 second timer");
     //TimeOutData.sensor = TIMEOUT_ID;
     //TimeOutData.qData = sec;
    // xQueueSend(data_Queue, &TimeOutData, 0);
-}
-
-
-void TaskSendData(void *pvParameters)  // This is a task.
-{
-  //Send data to database
-  for (;;)
-  {}
 }
