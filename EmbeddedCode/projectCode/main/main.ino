@@ -24,6 +24,7 @@
 #include <freertos/task.h>
 #include <freertos/queue.h>
 #include <freertos/event_groups.h>
+#include <freertos/timers.h>
 #include <freertos/semphr.h>
 
 
@@ -40,6 +41,7 @@
 #include <hp_BH1750.h>  //  include the library
 //saves the bootCount variable on the RTC memory.
 RTC_DATA_ATTR int bootCount = 0;
+uint8_t sec = 0;
 
 #define uS_TO_S_FACTOR 1000000ULL  /* Conversion factor for micro seconds to seconds */
 #define TIME_TO_SLEEP  20        /* Time ESP32 will go to sleep (in seconds) */
@@ -49,6 +51,12 @@ SemaphoreHandle_t Air_Semaphore = NULL;
 #define DHTTYPE DHT22   // DHT 22  (AM2302), AM2321
 #define DHTPIN 17     // Digital pin connected to the DHT sensor
 EventGroupHandle_t SwitchEventGroup = NULL;
+
+
+TimerHandle_t AutoReloadTimerHandle = NULL;
+void AutoReloadCallback(TimerHandle_t xTimer);
+
+
 #define climateBit (1<<0)
 #define airBit (1<<1)
 #define phBit (1<<2)
@@ -224,8 +232,8 @@ void setup() {
 
   Serial.println(F("SD library initialized"));
 
-  Serial.println(F("Delete original file if exists!"));
-  SD.remove(filename);
+  //Serial.println(F("Delete original file if exists!"));
+  //SD.remove(filename);
   //BH1750
   bool avail = BH1750.begin(BH1750_TO_GROUND);
 
@@ -310,6 +318,10 @@ void setup() {
     ,  1  // Priority
     ,  NULL
     ,  1);/* Core where the task should run */
+
+  AutoReloadTimerHandle = xTimerCreate("Auto Reload Timer", pdMS_TO_TICKS(1000), pdTRUE, 0, AutoReloadCallback);
+  xTimerStart(AutoReloadTimerHandle, 0);
+
 
   
   SwitchEventGroup = xEventGroupCreate();
@@ -624,6 +636,18 @@ void climateTask(void *pvParameters)  // This is a task.
 
   }
 }
+
+void AutoReloadCallback(TimerHandle_t xTimer) {
+  dataStruct TimeOutData;
+  Serial.println(sec);
+  sec++;
+  if (sec == 10)
+  Serial.println("10 second timer");
+    //TimeOutData.sensor = TIMEOUT_ID;
+    //TimeOutData.qData = sec;
+   // xQueueSend(data_Queue, &TimeOutData, 0);
+}
+
 
 void TaskSendData(void *pvParameters)  // This is a task.
 {
