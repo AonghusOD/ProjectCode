@@ -44,7 +44,7 @@ RTC_DATA_ATTR int bootCount = 0;
 uint8_t sec = 0;
 
 #define uS_TO_S_FACTOR 1000000ULL  /* Conversion factor for micro seconds to seconds */
-#define TIME_TO_SLEEP  20        /* Time ESP32 will go to sleep (in seconds) */
+#define TIME_TO_SLEEP  600        /* Time ESP32 will go to sleep (in seconds) */
 
 SemaphoreHandle_t Air_Semaphore = NULL;
 
@@ -117,7 +117,6 @@ JsonObject getJSonFromFile(DynamicJsonDocument *doc, String filename, bool force
     // if the file didn't open, print an error:
     Serial.print(F("Error opening (or file not exists) "));
     Serial.println(filename);
-
     Serial.println(F("Empty json created"));
     return doc->to<JsonObject>();
   }
@@ -130,15 +129,12 @@ bool saveJSonToAFile(DynamicJsonDocument *doc, String filename) {
   // open the file. note that only one file can be open at a time,
   // so you have to close this one before opening another.
   Serial.println(F("Open file in write mode"));
-  myFileSDCart = SD.open(filename, FILE_WRITE);
+  myFileSDCart = SD.open(filename, FILE_APPEND);
   if (myFileSDCart) {
     Serial.print(F("Filename --> "));
     Serial.println(filename);
-
     Serial.print(F("Start write..."));
-
     serializeJson(*doc, myFileSDCart);
-
     Serial.print(F("..."));
     // close the file:
     myFileSDCart.close();
@@ -153,7 +149,6 @@ bool saveJSonToAFile(DynamicJsonDocument *doc, String filename) {
     return false;
   }
 }
-
 
 void printFile(const char *filename) {
   // Open file for reading
@@ -213,13 +208,7 @@ void setup() {
   //vTaskResume(luxHandle);
 
   // initialize serial communication at 115200 bits per second:
-
-
   vQueueAddToRegistry(data_Queue, "Data Queue"); // just for debug
-
-
-
-
   //JSON
   while (!Serial)
     continue;
@@ -231,8 +220,8 @@ void setup() {
 
   Serial.println(F("SD library initialized"));
 
-  Serial.println(F("Delete original file if exists!"));
-  SD.remove(filename);
+  //Serial.println(F("Delete original file if exists!"));
+  //SD.remove(filename);
   //BH1750
   bool avail = BH1750.begin(BH1750_TO_GROUND);
 
@@ -323,8 +312,8 @@ void setup() {
 
   esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
   EventBits_t saveSD_EventBits;
-  saveSD_EventBits = xEventGroupWaitBits(SwitchEventGroup, luxBit | phBit | airBit | tdsBit | climateBit, pdTRUE, pdTRUE, portMAX_DELAY);
-  if (saveSD_EventBits & (luxBit | phBit | airBit | tdsBit | climateBit)) {
+  saveSD_EventBits = xEventGroupWaitBits(SwitchEventGroup, luxBit | phBit | tdsBit | climateBit, pdTRUE, pdTRUE, portMAX_DELAY);
+  if (saveSD_EventBits & ( luxBit | phBit | tdsBit | climateBit)) {
     Serial.println("Bits set going to sleep");
     printFile(filename);
     esp_deep_sleep_start();
@@ -355,7 +344,7 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
   (void) pvParameters;
   dataStruct received_Data;
   uint8_t air_loop = 0;
-  DynamicJsonDocument doc(1024);
+  DynamicJsonDocument doc(5000);
 
   JsonObject obj;
   obj = getJSonFromFile(&doc, filename);
@@ -408,7 +397,9 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             
             Serial.println("air_loop");
             Serial.println(air_loop);
-            if(air_loop == 10){
+            
+            //if(air_loop == 10){
+              Serial.print("made it co2 bit set");
               objArrayData["CO2"] = received_Data.qData;
               objArrayData["HVOC"] = received_Data.qData2;
               boolean isSaved = saveJSonToAFile(&doc, filename);
@@ -421,7 +412,7 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             } else {
               Serial.println("Error on save File!");
             }
-            }
+            //}
             
             break;
           }
@@ -502,7 +493,12 @@ void TaskAir(void *pvParameters)  // This is a task.
       
       if (!ccs.readData()) {
         vTaskDelay(1000);
+        Serial.print("CO2: ................");
+        Serial.print(ccs.geteCO2());
+        Serial.print("ppm, TVOC: ");
+        Serial.println(ccs.getTVOC());
         AirData.sensor = AIR_ID;
+        Serial.print("made it co2 task");
         AirData.qData = ccs.geteCO2();
         AirData.qData2 = ccs.getTVOC();
         xQueueSend(data_Queue, &AirData, 0);
