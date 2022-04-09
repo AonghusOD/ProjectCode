@@ -1,3 +1,5 @@
+
+
 /* Aonghus O Domhnaill
    Student ID: G00293306
    Environment Monitor
@@ -44,7 +46,7 @@ RTC_DATA_ATTR int bootCount = 0;
 uint8_t sec = 0;
 
 #define uS_TO_S_FACTOR 1000000ULL  /* Conversion factor for micro seconds to seconds */
-#define TIME_TO_SLEEP  600        /* Time ESP32 will go to sleep (in seconds) */
+#define TIME_TO_SLEEP  5        /* Time ESP32 will go to sleep (in seconds) */
 
 SemaphoreHandle_t Air_Semaphore = NULL;
 
@@ -89,7 +91,7 @@ const char *filename = "/test.jso";  // <- SD library uses 8.3 filenames
 
 File myFileSDCart;
 
-JsonObject getJSonFromFile(DynamicJsonDocument *doc, String filename, bool forceCleanONJsonError = true ) {
+JsonObject getJSonFromFile(DynamicJsonDocument *doc, String filename, bool forceCleanONJsonError = false ) {
   // open the file for reading:
   myFileSDCart = SD.open(filename);
   if (myFileSDCart) {
@@ -200,6 +202,7 @@ void climateTask(void *pvParameters);
 // the setup function runs once when you press reset or power the board
 void setup() {
   Serial.begin(9600);
+  vTaskDelay(500);
   Air_Semaphore = xSemaphoreCreateBinary();
   //  vTaskSuspend(climateHandle);
   //  vTaskSuspend(airHandle);
@@ -215,13 +218,14 @@ void setup() {
 
   while (!SD.begin(chipSelect)) {
     Serial.println(F("Failed to initialize SD library"));
-    delay(1000);
+    vTaskDelay(1000);
   }
 
   Serial.println(F("SD library initialized"));
-
-  //Serial.println(F("Delete original file if exists!"));
-  //SD.remove(filename);
+  if(bootCount == 0) {
+    Serial.println(F("Delete original file if exists!"));
+    SD.remove(filename);
+  }
   //BH1750
   bool avail = BH1750.begin(BH1750_TO_GROUND);
 
@@ -247,7 +251,7 @@ void setup() {
   xTaskCreatePinnedToCore(
     TaskSDWrite
     ,  "SD Write"
-    ,  3056  // Stack size
+    ,  4056  // Stack size
     ,  NULL
     ,  4  // Priority
     ,  NULL
@@ -292,7 +296,7 @@ void setup() {
   xTaskCreatePinnedToCore(
     climateTask
     ,  "Read Climate"
-    ,  3024  // Stack size
+    ,  1024  // Stack size
     ,  NULL
     ,  3  // Priority
     ,  &climateHandle
@@ -302,7 +306,7 @@ void setup() {
   xTimerStart(AutoReloadTimerHandle, 0);
 
 
-  
+
   SwitchEventGroup = xEventGroupCreate();
   //Sleep-Timer Stuff
 
@@ -314,8 +318,8 @@ void setup() {
   EventBits_t saveSD_EventBits;
   saveSD_EventBits = xEventGroupWaitBits(SwitchEventGroup, luxBit | phBit | tdsBit | climateBit, pdTRUE, pdTRUE, portMAX_DELAY);
   if (saveSD_EventBits & ( luxBit | phBit | tdsBit | climateBit)) {
-    Serial.println("Bits set going to sleep");
     printFile(filename);
+    Serial.println("Bits set going to sleep");
     esp_deep_sleep_start();
   }
 
@@ -344,7 +348,7 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
   (void) pvParameters;
   dataStruct received_Data;
   uint8_t air_loop = 0;
-  DynamicJsonDocument doc(5000);
+  DynamicJsonDocument doc(7000);
 
   JsonObject obj;
   obj = getJSonFromFile(&doc, filename);
@@ -380,7 +384,7 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             xEventGroupSetBits(SwitchEventGroup, climateBit);
             Serial.println("1 Climate Bit set");
             vTaskSuspend(climateHandle);
-            vTaskDelay(100);
+            //vTaskDelay(100);
             if (isSaved) {
               Serial.println("File saved!");
             } else {
@@ -390,30 +394,30 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
           }
         case AIR_ID:
           {
-            
-            
+
+
             //Serial.println("Value of Sec", &sec);
             air_loop++;
-            
+
             Serial.println("air_loop");
             Serial.println(air_loop);
-            
+
             //if(air_loop == 10){
-              Serial.print("made it co2 bit set");
-              objArrayData["CO2"] = received_Data.qData;
-              objArrayData["HVOC"] = received_Data.qData2;
-              boolean isSaved = saveJSonToAFile(&doc, filename);
-              //Serial.println("2 About to set air Bit set");
-              xEventGroupSetBits(SwitchEventGroup, airBit);
-              Serial.println("2 Air Bit set and give semaphore");
-              vTaskSuspend(airHandle);
-              if (isSaved) {
+            Serial.print("made it co2 bit set");
+            objArrayData["CO2"] = received_Data.qData;
+            objArrayData["HVOC"] = received_Data.qData2;
+            boolean isSaved = saveJSonToAFile(&doc, filename);
+            //Serial.println("2 About to set air Bit set");
+            xEventGroupSetBits(SwitchEventGroup, airBit);
+            Serial.println("2 Air Bit set and give semaphore");
+            vTaskSuspend(airHandle);
+            if (isSaved) {
               Serial.println("File saved!");
             } else {
               Serial.println("Error on save File!");
             }
             //}
-            
+
             break;
           }
         case PH_ID:
@@ -476,7 +480,7 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
 void TaskAir(void *pvParameters)  // This is a task.
 {
   (void) pvParameters;
-  
+
   dataStruct AirData;
   if (!ccs.begin()) {
     Serial.println("Failed to start sensor! Please check your wiring.");
@@ -490,7 +494,7 @@ void TaskAir(void *pvParameters)  // This is a task.
   {
 
     if (ccs.available()) {
-      
+
       if (!ccs.readData()) {
         vTaskDelay(1000);
         Serial.print("CO2: ................");
@@ -519,7 +523,7 @@ void TaskReadPH( void *pvParameters )
 {
   dataStruct PHData;
   for (;;) {
-    vTaskDelay(1000);
+    //vTaskDelay(1000);
     static unsigned long timepoint = millis();
     if (millis() - timepoint > 1000U) //time interval: 1s
     {
@@ -536,7 +540,7 @@ void TaskReadPH( void *pvParameters )
       PHData.sensor = PH_ID;
       PHData.qData = phValue;
       xQueueSend(data_Queue, &PHData, 0);
-      vTaskDelay(10000);
+      vTaskDelay(1000);
     }
     //vTaskSuspend( NULL );
     // vTaskDelay(100);  // one tick delay (15ms) in between reads for stability
@@ -547,7 +551,7 @@ void TaskReadTDS( void *pvParameters ) {
   dataStruct TDSData;
   xSemaphoreGive( Air_Semaphore );
   for (;;) {
-    vTaskDelay(1000);
+    //vTaskDelay(1000);
     //temperature = readTemperature();  //add your temperature sensor and read it
     gravityTds.setTemperature(temperature);  // set the temperature and execute temperature compensation
     gravityTds.update();  //sample and calculate
@@ -568,24 +572,31 @@ void TaskReadTDS( void *pvParameters ) {
 void TaskReadLux( void *pvParameters )
 {
   dataStruct LuxData;
+  uint8_t x = 0;
+  float lux;
   for (;;)
   {
     if ( xSemaphoreTake( Air_Semaphore, ( TickType_t ) 5 ) == pdTRUE )
     {
       BH1750.start();   //starts a measurement
-      float lux = BH1750.getLux(); //  waits until a conversion finished
-      Serial.print("Light..............................");
-      Serial.println(lux);
-      Serial.print("Core");
-      Serial.println(xPortGetCoreID());
+      if (x < 10) {
+        //vTaskDelay(500);
+        lux = BH1750.getLux(); //  waits until a conversion finished
+        Serial.print("Light..............................");
+        Serial.println(lux);
+        Serial.print("Core");
+        Serial.println(xPortGetCoreID());
+        x++;
+      }
+      lux = BH1750.getLux();
       LuxData.sensor = LUX_ID;
       LuxData.qData = lux;
       xQueueSend(data_Queue, &LuxData, 0);
-      }
-      vTaskDelay(10000);
-      //vTaskSuspend( NULL );
-      // one tick delay (15ms) in between reads for stability
-    
+    }
+    //vTaskDelay(10000);
+    //vTaskSuspend( NULL );
+    // one tick delay (15ms) in between reads for stability
+
   }
 }
 
@@ -595,8 +606,6 @@ void climateTask(void *pvParameters)  // This is a task.
   dataStruct ClimateData;
   for (;;)
   {
-    delay(2000);
-
     // Reading temperature or humidity takes about 250 milliseconds!
     // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
     float h = dht.readHumidity();
@@ -633,8 +642,8 @@ void AutoReloadCallback(TimerHandle_t xTimer) {
   //Serial.println(sec);
   sec++;
   if (sec == 10)
-  Serial.println("10 second timer");
-    //TimeOutData.sensor = TIMEOUT_ID;
-    //TimeOutData.qData = sec;
-   // xQueueSend(data_Queue, &TimeOutData, 0);
+    Serial.println("10 second timer");
+  //TimeOutData.sensor = TIMEOUT_ID;
+  //TimeOutData.qData = sec;
+  // xQueueSend(data_Queue, &TimeOutData, 0);
 }
