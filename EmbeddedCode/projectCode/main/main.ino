@@ -479,6 +479,11 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             objArrayData["Temp"] = received_Data.qData;
             objArrayData["Hum"] = received_Data.qData2;
             boolean isSaved = saveJSonToAFile(&doc, filename);
+
+            char jsonBuffer[512];
+            serializeJson(objArrayData, jsonBuffer); // print to client
+            client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
+
             //Serial.println("1 About to set climate Bit set");
             xEventGroupSetBits(SwitchEventGroup, climateBit);
             
