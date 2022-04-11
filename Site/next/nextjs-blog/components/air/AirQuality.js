@@ -56,7 +56,7 @@ const AirQuality = () =>{
         pointHoverBorderWidth: 2,
         pointRadius: 1,
         pointHitRadius: 10,
-        data: [53, data.airReading, 80, 56, 56, 55, 40],
+        data: [data],
       },
     ],
   };
