@@ -1,4 +1,4 @@
-
+//Need to put publish message
 
 /* Aonghus O Domhnaill
    Student ID: G00293306
@@ -15,6 +15,11 @@
      cal:tds value -> calibrate with the known tds value(25^c). e.g.cal:707
      exit -> save the parameters and exit the calibration mode
  ****************************************************/
+#include "secrets.h"
+#include <WiFiClientSecure.h>
+#include <PubSubClient.h>
+#include "WiFi.h"
+
 //Header Files SD
 #include "FS.h"
 #include "SD.h"
@@ -46,7 +51,100 @@ RTC_DATA_ATTR int bootCount = 0;
 uint8_t sec = 0;
 
 #define uS_TO_S_FACTOR 1000000ULL  /* Conversion factor for micro seconds to seconds */
-#define TIME_TO_SLEEP  5        /* Time ESP32 will go to sleep (in seconds) */
+#define TIME_TO_SLEEP  5       /* Time ESP32 will go to sleep (in seconds) */
+//10.15
+
+
+
+//AWS IOT STUFF
+#define AWS_IOT_PUBLISH_TOPIC   "esp32/pub"
+#define AWS_IOT_SUBSCRIBE_TOPIC "esp32/sub"
+
+WiFiClientSecure net = WiFiClientSecure();
+PubSubClient client(net);
+
+void connectAWS()
+{
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+
+  Serial.println("Connecting to Wi-Fi");
+
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(500);
+    Serial.print(".");
+  }
+
+  // Configure WiFiClientSecure to use the AWS IoT device credentials
+  net.setCACert(AWS_CERT_CA);
+  net.setCertificate(AWS_CERT_CRT);
+  net.setPrivateKey(AWS_CERT_PRIVATE);
+
+  // Connect to the MQTT broker on the AWS endpoint we defined earlier
+  client.setServer(AWS_IOT_ENDPOINT, 8883);
+
+  // Create a message handler
+  client.setCallback(messageHandler);
+
+  Serial.println("Connecting to AWS IOT");
+  
+  while (!client.connect(THINGNAME))
+  {
+    Serial.print(".");
+    delay(100);
+  }
+
+  if (!client.connected())
+  {
+    Serial.println("AWS IoT Timeout!");
+    return;
+  }
+
+  // Subscribe to a topic
+  client.subscribe(AWS_IOT_SUBSCRIBE_TOPIC);
+
+  Serial.println("AWS IoT Connected!");
+}
+
+void publishMessage()
+{
+  StaticJsonDocument<200> doc;
+//  doc["humidity"] = h;
+//  doc["temperature"] = t;
+//  char jsonBuffer[512];
+//  serializeJson(doc, jsonBuffer); // print to client
+// 
+//  client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
+}
+ 
+void messageHandler(char* topic, byte* payload, unsigned int length)
+{
+  Serial.print("incoming: ");
+  Serial.println(topic);
+ 
+  StaticJsonDocument<200> doc;
+  deserializeJson(doc, payload);
+  const char* message = doc["message"];
+  Serial.println(message);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 SemaphoreHandle_t Air_Semaphore = NULL;
 
@@ -67,8 +165,8 @@ void AutoReloadCallback(TimerHandle_t xTimer);
 
 typedef struct {
   uint8_t sensor;
-  uint32_t qData;
-  uint32_t qData2;
+  uint8_t qData;
+  uint8_t qData2;
 } dataStruct;
 
 #define CLIMATE_ID 0
@@ -131,7 +229,7 @@ bool saveJSonToAFile(DynamicJsonDocument *doc, String filename) {
   // open the file. note that only one file can be open at a time,
   // so you have to close this one before opening another.
   Serial.println(F("Open file in write mode"));
-  myFileSDCart = SD.open(filename, FILE_APPEND);
+  myFileSDCart = SD.open(filename, FILE_WRITE);
   if (myFileSDCart) {
     Serial.print(F("Filename --> "));
     Serial.println(filename);
@@ -171,7 +269,7 @@ void printFile(const char *filename) {
 }
 //----------------------------------------------------------------------
 
-QueueHandle_t data_Queue = xQueueCreate(15, sizeof(dataStruct));
+QueueHandle_t data_Queue = xQueueCreate(10, sizeof(dataStruct));
 
 hp_BH1750 BH1750;       //  create the sensor
 
@@ -202,6 +300,7 @@ void climateTask(void *pvParameters);
 // the setup function runs once when you press reset or power the board
 void setup() {
   Serial.begin(9600);
+  connectAWS();
   vTaskDelay(500);
   Air_Semaphore = xSemaphoreCreateBinary();
   //  vTaskSuspend(climateHandle);
@@ -222,7 +321,7 @@ void setup() {
   }
 
   Serial.println(F("SD library initialized"));
-  if(bootCount == 0) {
+  if (bootCount == 0) {
     Serial.println(F("Delete original file if exists!"));
     SD.remove(filename);
   }
@@ -251,7 +350,7 @@ void setup() {
   xTaskCreatePinnedToCore(
     TaskSDWrite
     ,  "SD Write"
-    ,  4056  // Stack size
+    ,  3056  // Stack size
     ,  NULL
     ,  4  // Priority
     ,  NULL
@@ -287,7 +386,7 @@ void setup() {
   xTaskCreatePinnedToCore(
     TaskReadLux
     ,  "Read Lux"
-    ,  2024  // Stack size
+    ,  1524  // Stack size
     ,  NULL
     ,  3  // Priority
     ,  &luxHandle
@@ -296,7 +395,7 @@ void setup() {
   xTaskCreatePinnedToCore(
     climateTask
     ,  "Read Climate"
-    ,  1024  // Stack size
+    ,  1524  // Stack size
     ,  NULL
     ,  3  // Priority
     ,  &climateHandle
@@ -348,8 +447,8 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
   (void) pvParameters;
   dataStruct received_Data;
   uint8_t air_loop = 0;
-  DynamicJsonDocument doc(7000);
-
+  DynamicJsonDocument doc(4024);
+  
   JsonObject obj;
   obj = getJSonFromFile(&doc, filename);
 
@@ -377,13 +476,16 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
       switch (received_Data.sensor) {
         case CLIMATE_ID:
           {
-            objArrayData["Temperature"] = received_Data.qData;
-            objArrayData["Humidity"] = received_Data.qData2;
+            objArrayData["Temp"] = received_Data.qData;
+            objArrayData["Hum"] = received_Data.qData2;
             boolean isSaved = saveJSonToAFile(&doc, filename);
             //Serial.println("1 About to set climate Bit set");
             xEventGroupSetBits(SwitchEventGroup, climateBit);
+            
+            //client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
+            
             Serial.println("1 Climate Bit set");
-            vTaskSuspend(climateHandle);
+            //vTaskSuspend(climateHandle);
             //vTaskDelay(100);
             if (isSaved) {
               Serial.println("File saved!");
@@ -563,7 +665,7 @@ void TaskReadTDS( void *pvParameters ) {
     TDSData.sensor = TDS_ID;
     TDSData.qData = tdsValue;
     xQueueSend(data_Queue, &TDSData, 0);
-    vTaskDelay(10000);
+    vTaskDelay(1000);
     // vTaskSuspend( NULL );
     //vTaskDelay(100);
   }
@@ -633,6 +735,7 @@ void climateTask(void *pvParameters)  // This is a task.
     Serial.print(F("%  Temperature: "));
     Serial.print(t);
     Serial.print(F("°C "));
+    vTaskSuspend(climateHandle);
 
   }
 }
