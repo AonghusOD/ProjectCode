@@ -239,7 +239,9 @@ bool saveJSonToAFile(DynamicJsonDocument *doc, String filename) {
     // close the file:
     myFileSDCart.close();
     Serial.println(F("done."));
-
+//    char jsonBuffer[512];
+//    size_t n = serializeJson(filename, jsonBuffer); // print to client
+//    client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer, n);
     return true;
   } else {
     // if the file didn't open, print an error:
@@ -418,6 +420,7 @@ void setup() {
   saveSD_EventBits = xEventGroupWaitBits(SwitchEventGroup, luxBit | phBit | tdsBit | climateBit, pdTRUE, pdTRUE, portMAX_DELAY);
   if (saveSD_EventBits & ( luxBit | phBit | tdsBit | climateBit)) {
     printFile(filename);
+    
     Serial.println("Bits set going to sleep");
     esp_deep_sleep_start();
   }
@@ -481,9 +484,9 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             boolean isSaved = saveJSonToAFile(&doc, filename);
 
             char jsonBuffer[512];
-            serializeJson(objArrayData, jsonBuffer); // print to client
+            serializeJson(obj, jsonBuffer); // print to client
             client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
-
+            //client.write
             //Serial.println("1 About to set climate Bit set");
             xEventGroupSetBits(SwitchEventGroup, climateBit);
             
@@ -573,7 +576,8 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             break;
           }
       }
-
+      
+      
       Serial.print("Core");
       Serial.println(xPortGetCoreID());
       //      // Print test file
