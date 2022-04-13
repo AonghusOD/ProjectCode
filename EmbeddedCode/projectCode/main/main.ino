@@ -484,7 +484,7 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             boolean isSaved = saveJSonToAFile(&doc, filename);
 
             char jsonBuffer[512];
-            serializeJson(obj, jsonBuffer); // print to client
+            serializeJson(data, jsonBuffer); // print to client
             client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
             //client.write
             //Serial.println("1 About to set climate Bit set");
