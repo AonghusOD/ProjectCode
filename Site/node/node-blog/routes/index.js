@@ -133,7 +133,7 @@ device.on("message", function (topic, payload) {
   var stringBuf = payload.toString('utf-8');
   var myobj3 = JSON.parse(stringBuf);
 
-  airModel.updateOne(myobj3, function(err, res) {
+  airModel.create(myobj3, function(err, res) {
     if (err) throw err;
     console.log("1 record inserted");
   });
@@ -159,19 +159,15 @@ device.on("error", function (topic, payload) {
 });
 
 
+// device.on("message", insertEvent);
 
 
-
-
-device.on("message", insertEvent);
-
-
-function insertEvent(topic,payload) {
-  console.log(topic + ":" + payload)
-  var key=topic.replace(deviceRoot,'');
-  console.log(payload.Hum)
-  var data = new airModel(payload.Hum)
-  data.save()
+// function insertEvent(topic,payload) {
+//   console.log(topic + ":" + payload)
+//   var key=topic.replace(deviceRoot,'');
+//   console.log(payload.Hum)
+  //var data = new airModel(payload.Hum)
+  //data.save()
   //airModel.update({}, { $set: { Hum: 'foo' } });
 //   airModel.update(
 //   { _id:key }, 
@@ -186,11 +182,6 @@ function insertEvent(topic,payload) {
 
 // );
 
-}
-
-
-
-
-
+//}
 
 module.exports = router;
