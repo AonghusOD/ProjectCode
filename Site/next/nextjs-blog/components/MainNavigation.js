@@ -19,6 +19,9 @@ function MainNavigation(props) {
             <Link href="/air"><a><Button shadow color="error" auto>Air</Button></a></Link>
           </div>
           <div className={classes.linkDiv}>
+            <Link href="/alldata"><a><Button shadow color="error" auto>All Data</Button></a></Link>
+          </div>
+          <div className={classes.linkDiv}>
             <Link href="/climate"><a><Button shadow color="error" auto>Climate</Button></a></Link>
           </div>
           <div className={classes.linkDiv}>

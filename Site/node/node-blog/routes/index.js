@@ -2,7 +2,7 @@ let express = require("express");
 let router = express.Router();
 let bodyParser = require('body-parser');
 let mongoose = require("mongoose");
-mongoose.connect("localhost:27017/blog");
+mongoose.connect("mongodb://localhost:27017/blog");
 
 const awsIot = require("aws-iot-device-sdk");
 deviceRoot = "esp32/pub/";
@@ -30,6 +30,9 @@ const airSchema = new Schema(
     airReading: String,
     Temp: String,
     Hum: String,
+    LUX: String,
+    PH: String,
+    TDS: String,
   },
   { collection: "air" }
 );
@@ -133,7 +136,7 @@ device.on("message", function (topic, payload) {
   var stringBuf = payload.toString('utf-8');
   var myobj3 = JSON.parse(stringBuf);
 
-  airModel.create(myobj3, function(err, res) {
+  airModel.insertMany(myobj3, function(err, res) {
     if (err) throw err;
     console.log("1 record inserted");
   });
