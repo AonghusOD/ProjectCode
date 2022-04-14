@@ -403,7 +403,7 @@ void setup() {
     ,  &climateHandle
     ,  1);
 
-  AutoReloadTimerHandle = xTimerCreate("Auto Reload Timer", pdMS_TO_TICKS(1000), pdTRUE, 0, AutoReloadCallback);
+  AutoReloadTimerHandle = xTimerCreate("Auto Reload Timer", pdMS_TO_TICKS(60000), pdTRUE, 0, AutoReloadCallback);
   xTimerStart(AutoReloadTimerHandle, 0);
 
 
@@ -750,12 +750,6 @@ void climateTask(void *pvParameters)  // This is a task.
 }
 
 void AutoReloadCallback(TimerHandle_t xTimer) {
-  dataStruct TimeOutData;
-  //Serial.println(sec);
-  sec++;
-  if (sec == 10)
-    Serial.println("10 second timer");
-  //TimeOutData.sensor = TIMEOUT_ID;
-  //TimeOutData.qData = sec;
-  // xQueueSend(data_Queue, &TimeOutData, 0);
+  Serial.println("TimeOut deepsleep");
+  esp_deep_sleep_start();
 }
