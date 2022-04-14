@@ -1,39 +1,12 @@
 import { React, useState, useEffect } from "react";
 import { Line } from "react-chartjs-2";
+import GetAllData from "../GetAllData";
+import GetDataItem from "../getData-item";
+import GetDataList from "../getData-list";
 
-const AirQuality = () =>{
-  const [data, setData] = useState(null)
-  const [isLoading, setLoading] = useState(false)
-  
-  useEffect(() => {
-    setLoading(true)
-    fetch('api/getAir')
-      .then((res) => res.json())
-      .then((data) => {
-        const air = [];
-
-        for (const key in data) {
-          const meetup = {
-            id: key,
-            ...data[key]
-            
-          };
-          console.log(meetup)
-          air.push(meetup);
-        }
-        console.log(data)
-        setData(data)
-        //console.log(air)
-        
-        setLoading(false)
-      })
-  }, [])
-
-  
-
-  if (isLoading) return <p>Loading...</p>
-  if (!data) return <p>No profile data</p>
-
+function AirQuality (props) {
+  const { PH, Hum } = props;
+ 
   const data1 = {
     labels: ["January", "February", "March", "April", "May", "June", "July"],
     datasets: [
@@ -56,7 +29,7 @@ const AirQuality = () =>{
         pointHoverBorderWidth: 2,
         pointRadius: 1,
         pointHitRadius: 10,
-        data: [53, data.airReading, 80, 56, 56, 55, 40],
+        data:PH,
       },
     ],
   };
@@ -66,7 +39,7 @@ const AirQuality = () =>{
     <section>
       <div>
         <h2>AirQuality Data</h2>
-        <h1>{data.airReading}</h1>
+        <h1>{PH}</h1>
         <div
           style={{
             height: "40vh",
