@@ -85,7 +85,7 @@ void connectAWS()
   client.setServer(AWS_IOT_ENDPOINT, 8883);
 
   // Create a message handler
-  client.setCallback(messageHandler);
+  //client.setCallback(messageHandler);
 
   Serial.println("Connecting to AWS IOT");
   
@@ -417,8 +417,8 @@ void setup() {
 
   esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
   EventBits_t saveSD_EventBits;
-  saveSD_EventBits = xEventGroupWaitBits(SwitchEventGroup, luxBit | phBit | tdsBit | climateBit, pdTRUE, pdTRUE, portMAX_DELAY);
-  if (saveSD_EventBits & ( luxBit | phBit | tdsBit | climateBit)) {
+  saveSD_EventBits = xEventGroupWaitBits(SwitchEventGroup, airBit | luxBit | phBit | tdsBit | climateBit, pdTRUE, pdTRUE, portMAX_DELAY);
+  if (saveSD_EventBits & ( airBit | luxBit | phBit | tdsBit | climateBit)) {
     printFile(filename);
     
     Serial.println("Bits set going to sleep");
@@ -479,8 +479,8 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
       switch (received_Data.sensor) {
         case CLIMATE_ID:
           {
-            objArrayData["Temp"] = received_Data.qData;
-            objArrayData["Hum"] = received_Data.qData2;
+            objArrayData["TEMP"] = received_Data.qData;
+            objArrayData["HUM"] = received_Data.qData2;
             boolean isSaved = saveJSonToAFile(&doc, filename);
 
             char jsonBuffer[512];
