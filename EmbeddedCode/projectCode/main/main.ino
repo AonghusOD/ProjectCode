@@ -482,10 +482,6 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             objArrayData["TEMP"] = received_Data.qData;
             objArrayData["HUM"] = received_Data.qData2;
             boolean isSaved = saveJSonToAFile(&doc, filename);
-
-            char jsonBuffer[512];
-            serializeJson(data, jsonBuffer); // print to client
-            client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
             //client.write
             //Serial.println("1 About to set climate Bit set");
             xEventGroupSetBits(SwitchEventGroup, climateBit);
@@ -513,8 +509,12 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             objArrayData["HVOC"] = received_Data.qData2;
             boolean isSaved = saveJSonToAFile(&doc, filename);
             //Serial.println("2 About to set air Bit set");
-
-            Serial.println("Ran Upload");
+            //if ((bootCount % 5) == 0) {
+              Serial.println("Ran Upload");
+              char jsonBuffer[512];
+              serializeJson(data, jsonBuffer); // print to client
+              client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
+            //}
             xEventGroupSetBits(SwitchEventGroup, airBit);
             Serial.println("2 Air Bit set and give semaphore");
             vTaskSuspend(airHandle);
@@ -573,13 +573,13 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             break;
           }
       }
-//      if (bootCount / 5 == 1) {
-//        Serial.println("Ran Upload");
-//        char jsonBuffer[512];
-//        serializeJson(data, jsonBuffer); // print to client
-//        client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
-//        SD.remove(filename);
-//      }
+      //      if (bootCount / 5 == 1) {
+      //        Serial.println("Ran Upload");
+      //        char jsonBuffer[512];
+      //        serializeJson(data, jsonBuffer); // print to client
+      //        client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
+      //        SD.remove(filename);
+      //      }
       //Serial.print("Boot Count");
       //Serial.println(bootCount);
       //      // Print test file
