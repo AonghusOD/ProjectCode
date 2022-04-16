@@ -88,7 +88,7 @@ void connectAWS()
   //client.setCallback(messageHandler);
 
   Serial.println("Connecting to AWS IOT");
-  
+
   while (!client.connect(THINGNAME))
   {
     Serial.print(".");
@@ -110,19 +110,19 @@ void connectAWS()
 void publishMessage()
 {
   StaticJsonDocument<200> doc;
-//  doc["humidity"] = h;
-//  doc["temperature"] = t;
-//  char jsonBuffer[512];
-//  serializeJson(doc, jsonBuffer); // print to client
-// 
-//  client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
+  //  doc["humidity"] = h;
+  //  doc["temperature"] = t;
+  //  char jsonBuffer[512];
+  //  serializeJson(doc, jsonBuffer); // print to client
+  //
+  //  client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
 }
- 
+
 void messageHandler(char* topic, byte* payload, unsigned int length)
 {
   Serial.print("incoming: ");
   Serial.println(topic);
- 
+
   StaticJsonDocument<200> doc;
   deserializeJson(doc, payload);
   const char* message = doc["message"];
@@ -167,6 +167,7 @@ typedef struct {
   uint8_t sensor;
   uint8_t qData;
   uint8_t qData2;
+  float qData3;
 } dataStruct;
 
 #define CLIMATE_ID 0
@@ -239,9 +240,9 @@ bool saveJSonToAFile(DynamicJsonDocument *doc, String filename) {
     // close the file:
     myFileSDCart.close();
     Serial.println(F("done."));
-//    char jsonBuffer[512];
-//    size_t n = serializeJson(filename, jsonBuffer); // print to client
-//    client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer, n);
+    //    char jsonBuffer[512];
+    //    size_t n = serializeJson(filename, jsonBuffer); // print to client
+    //    client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer, n);
     return true;
   } else {
     // if the file didn't open, print an error:
@@ -297,7 +298,7 @@ void TaskAir( void *pvParameters );
 void TaskReadPH( void *pvParameters );
 void TaskReadTDS( void *pvParameters );
 void TaskReadLux( void *pvParameters );
-void climateTask(void *pvParameters);
+void ClimateTask(void *pvParameters);
 
 // the setup function runs once when you press reset or power the board
 void setup() {
@@ -395,7 +396,7 @@ void setup() {
     ,  1);
 
   xTaskCreatePinnedToCore(
-    climateTask
+    ClimateTask
     ,  "Read Climate"
     ,  1524  // Stack size
     ,  NULL
@@ -420,11 +421,9 @@ void setup() {
   saveSD_EventBits = xEventGroupWaitBits(SwitchEventGroup, airBit | luxBit | phBit | tdsBit | climateBit, pdTRUE, pdTRUE, portMAX_DELAY);
   if (saveSD_EventBits & ( airBit | luxBit | phBit | tdsBit | climateBit)) {
     printFile(filename);
-    
     Serial.println("Bits set going to sleep");
     esp_deep_sleep_start();
   }
-
 
   //
   // Serial.println("Setup ESP32 to sleep for every " + String(TIME_TO_SLEEP) +
@@ -451,7 +450,7 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
   dataStruct received_Data;
   uint8_t air_loop = 0;
   DynamicJsonDocument doc(4024);
-  
+
   JsonObject obj;
   obj = getJSonFromFile(&doc, filename);
 
@@ -467,6 +466,7 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
     Serial.println(F("Find data array!"));
     data = obj[F("data")];
   }
+
   //int received_Data = 0;
   for (;;)
   {
@@ -489,9 +489,9 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             //client.write
             //Serial.println("1 About to set climate Bit set");
             xEventGroupSetBits(SwitchEventGroup, climateBit);
-            
+
             //client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
-            
+
             Serial.println("1 Climate Bit set");
             //vTaskSuspend(climateHandle);
             //vTaskDelay(100);
@@ -504,13 +504,8 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
           }
         case AIR_ID:
           {
-
-
             //Serial.println("Value of Sec", &sec);
             air_loop++;
-
-            Serial.println("air_loop");
-            Serial.println(air_loop);
 
             //if(air_loop == 10){
             Serial.print("made it co2 bit set");
@@ -518,6 +513,8 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             objArrayData["HVOC"] = received_Data.qData2;
             boolean isSaved = saveJSonToAFile(&doc, filename);
             //Serial.println("2 About to set air Bit set");
+
+            Serial.println("Ran Upload");
             xEventGroupSetBits(SwitchEventGroup, airBit);
             Serial.println("2 Air Bit set and give semaphore");
             vTaskSuspend(airHandle);
@@ -532,7 +529,7 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
           }
         case PH_ID:
           {
-            objArrayData["PH"] = received_Data.qData;
+            objArrayData["PH"] = received_Data.qData3;
             boolean isSaved = saveJSonToAFile(&doc, filename);
             //Serial.println("3 About to set ph Bit set");
             xEventGroupSetBits(SwitchEventGroup, phBit);
@@ -576,10 +573,15 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             break;
           }
       }
-      
-      
-      Serial.print("Core");
-      Serial.println(xPortGetCoreID());
+//      if (bootCount / 5 == 1) {
+//        Serial.println("Ran Upload");
+//        char jsonBuffer[512];
+//        serializeJson(data, jsonBuffer); // print to client
+//        client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
+//        SD.remove(filename);
+//      }
+      //Serial.print("Boot Count");
+      //Serial.println(bootCount);
       //      // Print test file
       //      Serial.println(F("Print test file..."));
       //      printFile(filename);
@@ -591,7 +593,7 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
 void TaskAir(void *pvParameters)  // This is a task.
 {
   (void) pvParameters;
-
+  uint8_t air_loop = 0;
   dataStruct AirData;
   if (!ccs.begin()) {
     Serial.println("Failed to start sensor! Please check your wiring.");
@@ -607,24 +609,31 @@ void TaskAir(void *pvParameters)  // This is a task.
     if (ccs.available()) {
 
       if (!ccs.readData()) {
-        vTaskDelay(1000);
+        air_loop ++;
+        vTaskDelay(500);
         Serial.print("CO2: ................");
         Serial.print(ccs.geteCO2());
         Serial.print("ppm, TVOC: ");
         Serial.println(ccs.getTVOC());
-        AirData.sensor = AIR_ID;
-        Serial.print("made it co2 task");
-        AirData.qData = ccs.geteCO2();
-        AirData.qData2 = ccs.getTVOC();
-        xQueueSend(data_Queue, &AirData, 0);
+        if (air_loop == 10) {
+          Serial.print("CO2: ................");
+          Serial.print(ccs.geteCO2());
+          Serial.print("ppm, TVOC: ");
+          Serial.println(ccs.getTVOC());
+          AirData.sensor = AIR_ID;
+          Serial.print("made it co2 task");
+          AirData.qData = ccs.geteCO2();
+          AirData.qData2 = ccs.getTVOC();
+          xQueueSend(data_Queue, &AirData, 0);
+        }
       }
       else {
         Serial.println("ERROR!");
         while (1);
       }
     }
-    Serial.print("Core");
-    Serial.println(xPortGetCoreID());
+    //Serial.print("Core");
+    //Serial.println(xPortGetCoreID());
     //vTaskSuspend( NULL );
     // one tick delay (15ms) in between reads for stability
   }
@@ -649,7 +658,7 @@ void TaskReadPH( void *pvParameters )
       Serial.print("pH:");
       Serial.println(phValue, 4);
       PHData.sensor = PH_ID;
-      PHData.qData = phValue;
+      PHData.qData3 = phValue;
       xQueueSend(data_Queue, &PHData, 0);
       vTaskDelay(1000);
     }
@@ -675,7 +684,7 @@ void TaskReadTDS( void *pvParameters ) {
     TDSData.qData = tdsValue;
     xQueueSend(data_Queue, &TDSData, 0);
     vTaskDelay(1000);
-    // vTaskSuspend( NULL );
+    vTaskSuspend( NULL );
     //vTaskDelay(100);
   }
 }
@@ -711,7 +720,7 @@ void TaskReadLux( void *pvParameters )
   }
 }
 
-void climateTask(void *pvParameters)  // This is a task.
+void ClimateTask(void *pvParameters)  // This is a task.
 {
   //Send data to database
   dataStruct ClimateData;
