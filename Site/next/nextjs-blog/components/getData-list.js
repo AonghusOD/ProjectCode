@@ -41,7 +41,7 @@ let PH2 = [PHData]
         pointHoverBorderWidth: 2,
         pointRadius: 1,
         pointHitRadius: 10,
-        data: PHData,
+        data: [PHData[0],PHData[5],PHData[10],PHData[15],PHData[20]]
       },
     ],
   };
