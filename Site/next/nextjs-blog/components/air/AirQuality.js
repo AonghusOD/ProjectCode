@@ -7,6 +7,7 @@ import GetDataList from "../getData-list";
 function AirQuality (props) {
   const { PH, Hum } = props;
  
+  
   const data1 = {
     labels: ["January", "February", "March", "April", "May", "June", "July"],
     datasets: [

@@ -5,7 +5,7 @@ export default function allDataPage() {
   return (
     <>
       <Head>
-        <title>All Dat</title>
+        <title>All Data</title>
       </Head>
       <GetAllData />
     </>

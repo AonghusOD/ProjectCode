@@ -28,11 +28,13 @@ let Schema = mongoose.Schema;
 const airSchema = new Schema(
   {
     airReading: String,
-    Temp: String,
-    Hum: String,
+    TEMP: String,
+    HUM: String,
     LUX: String,
-    PH: String,
+    PH: Number,
     TDS: String,
+    CO2: Number,
+    HVOC: Number,
   },
   { collection: "air" }
 );
@@ -140,6 +142,7 @@ device.on("message", function (topic, payload) {
     if (err) throw err;
     console.log("1 record inserted");
   });
+  //airModel.aggregate( [ { $group : { PH : "PH" } } ] )
   // client.publish(topic, 'nodejs mqtt test', { qos: 0, retain: false }, (error) => {
   //   if (error) {
   //     console.error(error)
