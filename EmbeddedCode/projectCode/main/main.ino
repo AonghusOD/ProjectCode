@@ -34,8 +34,6 @@
 #include <freertos/timers.h>
 #include <freertos/semphr.h>
 
-
-
 #include "Adafruit_CCS811.h"
 #include "main.h"
 #include "DFRobot_ESP_PH.h"
@@ -47,7 +45,7 @@
 #include <Arduino.h>
 #include <hp_BH1750.h>  //  include the library
 //saves the bootCount variable on the RTC memory.
-RTC_DATA_ATTR int bootCount = 0;
+RTC_DATA_ATTR uint8_t bootCount = 0;
 uint8_t sec = 0;
 
 #define uS_TO_S_FACTOR 1000000ULL  /* Conversion factor for micro seconds to seconds */
@@ -130,22 +128,6 @@ void messageHandler(char* topic, byte* payload, unsigned int length)
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 SemaphoreHandle_t Air_Semaphore = NULL;
 
 #define DHTTYPE DHT22   // DHT 22  (AM2302), AM2321
@@ -175,12 +157,14 @@ typedef struct {
 #define PH_ID 2
 #define TDS_ID 3
 #define LUX_ID 4
+#define UPLOAD_ID 5
 
 TaskHandle_t climateHandle;
 TaskHandle_t airHandle;
 TaskHandle_t phHandle;
 TaskHandle_t tdsHandle;
 TaskHandle_t luxHandle;
+TaskHandle_t uploadHandle;
 
 DHT dht(DHTPIN, DHTTYPE);
 ///////////////////////////////////////JSON STUFF
@@ -239,6 +223,7 @@ bool saveJSonToAFile(DynamicJsonDocument *doc, String filename) {
     Serial.print(F("..."));
     // close the file:
     myFileSDCart.close();
+
     Serial.println(F("done."));
     //    char jsonBuffer[512];
     //    size_t n = serializeJson(filename, jsonBuffer); // print to client
@@ -299,6 +284,7 @@ void TaskReadPH( void *pvParameters );
 void TaskReadTDS( void *pvParameters );
 void TaskReadLux( void *pvParameters );
 void ClimateTask(void *pvParameters);
+//void TaskUploadServer(void *pvParameters);
 
 // the setup function runs once when you press reset or power the board
 void setup() {
@@ -306,11 +292,6 @@ void setup() {
   connectAWS();
   vTaskDelay(500);
   Air_Semaphore = xSemaphoreCreateBinary();
-  //  vTaskSuspend(climateHandle);
-  //  vTaskSuspend(airHandle);
-  //  vTaskSuspend(phHandle);
-  //  vTaskSuspend(tdsHandle);
-  //vTaskResume(luxHandle);
 
   // initialize serial communication at 115200 bits per second:
   vQueueAddToRegistry(data_Queue, "Data Queue"); // just for debug
@@ -353,7 +334,7 @@ void setup() {
   xTaskCreatePinnedToCore(
     TaskSDWrite
     ,  "SD Write"
-    ,  3056  // Stack size
+    ,  4356  // Stack size
     ,  NULL
     ,  4  // Priority
     ,  NULL
@@ -404,10 +385,17 @@ void setup() {
     ,  &climateHandle
     ,  1);
 
+//  xTaskCreatePinnedToCore(
+//    TaskUploadServer
+//    ,  "Upload Task"
+//    ,  1024  // Stack size
+//    ,  NULL
+//    ,  4  // Priority
+//    ,  &uploadHandle
+//    ,  1);
+
   AutoReloadTimerHandle = xTimerCreate("Auto Reload Timer", pdMS_TO_TICKS(60000), pdTRUE, 0, AutoReloadCallback);
   xTimerStart(AutoReloadTimerHandle, 0);
-
-
 
   SwitchEventGroup = xEventGroupCreate();
   //Sleep-Timer Stuff
@@ -449,7 +437,7 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
   (void) pvParameters;
   dataStruct received_Data;
   uint8_t air_loop = 0;
-  DynamicJsonDocument doc(4024);
+  DynamicJsonDocument doc(1024);
 
   JsonObject obj;
   obj = getJSonFromFile(&doc, filename);
@@ -504,19 +492,15 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             air_loop++;
 
             //if(air_loop == 10){
-            Serial.print("made it co2 bit set");
             objArrayData["CO2"] = received_Data.qData;
             objArrayData["HVOC"] = received_Data.qData2;
             boolean isSaved = saveJSonToAFile(&doc, filename);
-            //Serial.println("2 About to set air Bit set");
-            //if ((bootCount % 5) == 0) {
-              Serial.println("Ran Upload");
-              char jsonBuffer[512];
-              serializeJson(data, jsonBuffer); // print to client
-              client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
-            //}
+            char jsonBuffer[512];
+            serializeJson(data, jsonBuffer); // print to client
+            client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
+            SD.remove(filename);
+            vTaskDelay(3000);
             xEventGroupSetBits(SwitchEventGroup, airBit);
-            Serial.println("2 Air Bit set and give semaphore");
             vTaskSuspend(airHandle);
             if (isSaved) {
               Serial.println("File saved!");
@@ -533,7 +517,6 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             boolean isSaved = saveJSonToAFile(&doc, filename);
             //Serial.println("3 About to set ph Bit set");
             xEventGroupSetBits(SwitchEventGroup, phBit);
-            Serial.println("3 PH Bit set");
             vTaskSuspend(phHandle);
             if (isSaved) {
               Serial.println("File saved!");
@@ -548,7 +531,7 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             boolean isSaved = saveJSonToAFile(&doc, filename);
             //Serial.println("4 About to set tds Bit set");
             xEventGroupSetBits(SwitchEventGroup, tdsBit);
-            Serial.println("4 TDS Bit set");
+            //Serial.println("4 TDS Bit set");
             vTaskSuspend(tdsHandle);
             if (isSaved) {
               Serial.println("File saved!");
@@ -563,7 +546,7 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             boolean isSaved = saveJSonToAFile(&doc, filename);
             //Serial.println("5 About to set lux Bit set");
             xEventGroupSetBits(SwitchEventGroup, luxBit);
-            Serial.println("5 lux Bit set");
+            //Serial.println("5 lux Bit set");
             vTaskSuspend(luxHandle);
             if (isSaved) {
               Serial.println("File saved!");
@@ -572,6 +555,19 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             }
             break;
           }
+        case UPLOAD_ID:
+          {
+            vTaskSuspend(uploadHandle);
+            Serial.println("Ran Upload");
+            char jsonBuffer[512];
+            serializeJson(data, jsonBuffer); // print to client
+            client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
+            SD.remove(filename);
+            break;
+          }
+
+
+
       }
       //      if (bootCount / 5 == 1) {
       //        Serial.println("Ran Upload");
@@ -754,6 +750,21 @@ void ClimateTask(void *pvParameters)  // This is a task.
     Serial.print(t);
     Serial.print(F("°C "));
     vTaskSuspend(climateHandle);
+
+  }
+}
+
+void TaskUploadServer(void *pvParameters) {
+  dataStruct UploadData;
+  for (;;) {
+    //if (bootCount < 0) {
+      if (bootCount == 5) {
+        Serial.println("Set Upload ID");
+        UploadData.sensor = UPLOAD_ID;
+        xQueueSend(data_Queue, &UploadData, 0);
+        vTaskSuspend(NULL);
+      }
+    //}
 
   }
 }
