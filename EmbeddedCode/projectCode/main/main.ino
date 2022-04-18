@@ -211,7 +211,7 @@ bool saveJSonToAFile(DynamicJsonDocument *doc, String filename) {
   // open the file. note that only one file can be open at a time,
   // so you have to close this one before opening another.
   Serial.println(F("Open file in write mode"));
-  myFileSDCart = SD.open(filename, FILE_WRITE);
+  myFileSDCart = SD.open(filename, FILE_APPEND);
   if (myFileSDCart) {
     Serial.print(F("Filename --> "));
     Serial.println(filename);
@@ -382,14 +382,14 @@ void setup() {
     ,  &climateHandle
     ,  1);
 
-//  xTaskCreatePinnedToCore(
-//    TaskUploadServer
-//    ,  "Upload Task"
-//    ,  1024  // Stack size
-//    ,  NULL
-//    ,  4  // Priority
-//    ,  &uploadHandle
-//    ,  1);
+  //  xTaskCreatePinnedToCore(
+  //    TaskUploadServer
+  //    ,  "Upload Task"
+  //    ,  1024  // Stack size
+  //    ,  NULL
+  //    ,  4  // Priority
+  //    ,  &uploadHandle
+  //    ,  1);
 
   AutoReloadTimerHandle = xTimerCreate("Auto Reload Timer", pdMS_TO_TICKS(60000), pdTRUE, 0, AutoReloadCallback);
   xTimerStart(AutoReloadTimerHandle, 0);
@@ -406,6 +406,7 @@ void setup() {
   saveSD_EventBits = xEventGroupWaitBits(SwitchEventGroup, airBit | luxBit | phBit | tdsBit | climateBit, pdTRUE, pdTRUE, portMAX_DELAY);
   if (saveSD_EventBits & ( airBit | luxBit | phBit | tdsBit | climateBit)) {
     printFile(filename);
+    SD.remove(filename);
     Serial.println("Bits set going to sleep");
     Serial.flush();
     esp_deep_sleep_start();
@@ -496,7 +497,7 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             char jsonBuffer[512];
             serializeJson(data, jsonBuffer); // print to client
             client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
-            SD.remove(filename);
+            //SD.remove(filename);
             vTaskDelay(3000);
             xEventGroupSetBits(SwitchEventGroup, airBit);
             vTaskSuspend(airHandle);
@@ -563,9 +564,6 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             SD.remove(filename);
             break;
           }
-
-
-
       }
       //      if (bootCount / 5 == 1) {
       //        Serial.println("Ran Upload");
@@ -604,22 +602,23 @@ void TaskAir(void *pvParameters)  // This is a task.
 
       if (!ccs.readData()) {
         air_loop ++;
-        vTaskDelay(500);
+        vTaskDelay(50);
         Serial.print("CO2: ................");
         Serial.print(ccs.geteCO2());
         Serial.print("ppm, TVOC: ");
         Serial.println(ccs.getTVOC());
         if (air_loop == 10) {
           Serial.print("CO2: ................");
-          Serial.print(ccs.geteCO2());
-          Serial.print("ppm, TVOC: ");
-          Serial.println(ccs.getTVOC());
-          AirData.sensor = AIR_ID;
-          Serial.print("made it co2 task");
-          AirData.qData = ccs.geteCO2();
-          AirData.qData2 = ccs.getTVOC();
-          xQueueSend(data_Queue, &AirData, 0);
-          vTaskSuspend( NULL );
+            Serial.print(ccs.geteCO2());
+            Serial.print("ppm, TVOC: ");
+            Serial.println(ccs.getTVOC());
+            AirData.sensor = AIR_ID;
+            Serial.print("made it co2 task");
+            AirData.qData = ccs.geteCO2();
+            AirData.qData2 = ccs.getTVOC();
+            xQueueSend(data_Queue, &AirData, 0);
+            vTaskSuspend( NULL );
+          
         }
       }
       else {
@@ -757,12 +756,12 @@ void TaskUploadServer(void *pvParameters) {
   dataStruct UploadData;
   for (;;) {
     //if (bootCount < 0) {
-      if (bootCount == 5) {
-        Serial.println("Set Upload ID");
-        UploadData.sensor = UPLOAD_ID;
-        xQueueSend(data_Queue, &UploadData, 0);
-        vTaskSuspend(NULL);
-      }
+    if (bootCount == 5) {
+      Serial.println("Set Upload ID");
+      UploadData.sensor = UPLOAD_ID;
+      xQueueSend(data_Queue, &UploadData, 0);
+      vTaskSuspend(NULL);
+    }
     //}
 
   }
