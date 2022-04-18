@@ -50,9 +50,6 @@ uint8_t sec = 0;
 
 #define uS_TO_S_FACTOR 1000000ULL  /* Conversion factor for micro seconds to seconds */
 #define TIME_TO_SLEEP  5       /* Time ESP32 will go to sleep (in seconds) */
-//10.15
-
-
 
 //AWS IOT STUFF
 #define AWS_IOT_PUBLISH_TOPIC   "esp32/pub"
@@ -147,7 +144,7 @@ void AutoReloadCallback(TimerHandle_t xTimer);
 
 typedef struct {
   uint8_t sensor;
-  uint8_t qData;
+  uint16_t qData;
   uint8_t qData2;
   float qData3;
 } dataStruct;
@@ -361,7 +358,7 @@ void setup() {
   xTaskCreatePinnedToCore(
     TaskAir
     ,  "Read Air"
-    ,  2056  // Stack size
+    ,  2556  // Stack size
     ,  NULL
     ,  1  // Priority
     ,  &airHandle
@@ -410,6 +407,7 @@ void setup() {
   if (saveSD_EventBits & ( airBit | luxBit | phBit | tdsBit | climateBit)) {
     printFile(filename);
     Serial.println("Bits set going to sleep");
+    Serial.flush();
     esp_deep_sleep_start();
   }
 
@@ -621,6 +619,7 @@ void TaskAir(void *pvParameters)  // This is a task.
           AirData.qData = ccs.geteCO2();
           AirData.qData2 = ccs.getTVOC();
           xQueueSend(data_Queue, &AirData, 0);
+          vTaskSuspend( NULL );
         }
       }
       else {
@@ -771,5 +770,6 @@ void TaskUploadServer(void *pvParameters) {
 
 void AutoReloadCallback(TimerHandle_t xTimer) {
   Serial.println("TimeOut deepsleep");
+  Serial.flush();
   esp_deep_sleep_start();
 }
