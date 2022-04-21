@@ -1,0 +1,594 @@
+{ 
+    "_id" : ObjectId("625ebe9191a48cb70bea045f"), 
+    "PH" : 15.4516573, 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625ebe9191a48cb70bea0460"), 
+    "TDS" : NumberInt(5972), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625ebe9191a48cb70bea0461"), 
+    "TEMP" : NumberInt(20), 
+    "HUM" : NumberInt(80), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625ebe9191a48cb70bea0462"), 
+    "LUX" : NumberInt(7762), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625ebe9191a48cb70bea0463"), 
+    "CO2" : NumberInt(400), 
+    "HVOC" : NumberInt(0), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625ecca491a48cb70bea0465"), 
+    "PH" : 15.4516573, 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625ecca491a48cb70bea0466"), 
+    "TDS" : NumberInt(5584), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625ecca491a48cb70bea0467"), 
+    "TEMP" : NumberInt(19), 
+    "HUM" : NumberInt(89), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625ecca491a48cb70bea0468"), 
+    "LUX" : NumberInt(5684), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625ecca491a48cb70bea0469"), 
+    "CO2" : NumberInt(403), 
+    "HVOC" : NumberInt(0), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625ee8be91a48cb70bea046b"), 
+    "PH" : 15.4516573, 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625ee8be91a48cb70bea046c"), 
+    "TDS" : NumberInt(1652), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625ee8be91a48cb70bea046d"), 
+    "TEMP" : NumberInt(20), 
+    "HUM" : NumberInt(90), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625ee8be91a48cb70bea046e"), 
+    "LUX" : NumberInt(6703), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625ee8be91a48cb70bea046f"), 
+    "CO2" : NumberInt(400), 
+    "HVOC" : NumberInt(0), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625ef6d891a48cb70bea0471"), 
+    "PH" : 15.4516573, 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625ef6d891a48cb70bea0472"), 
+    "TDS" : NumberInt(1976), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625ef6d891a48cb70bea0473"), 
+    "TEMP" : NumberInt(17), 
+    "HUM" : NumberInt(84), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625ef6d891a48cb70bea0474"), 
+    "LUX" : NumberInt(134), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625ef6d891a48cb70bea0475"), 
+    "CO2" : NumberInt(405), 
+    "HVOC" : NumberInt(0), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f04f091a48cb70bea0477"), 
+    "PH" : 15.4516573, 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f04f091a48cb70bea0478"), 
+    "TDS" : NumberInt(1998), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f04f091a48cb70bea0479"), 
+    "TEMP" : NumberInt(20), 
+    "HUM" : NumberInt(86), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f04f091a48cb70bea047a"), 
+    "LUX" : NumberInt(6884), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f04f091a48cb70bea047b"), 
+    "CO2" : NumberInt(400), 
+    "HVOC" : NumberInt(0), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f130491a48cb70bea047d"), 
+    "PH" : 15.4516573, 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f130491a48cb70bea047e"), 
+    "TDS" : NumberInt(40), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f130491a48cb70bea047f"), 
+    "TEMP" : NumberInt(21), 
+    "HUM" : NumberInt(88), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f130491a48cb70bea0480"), 
+    "LUX" : NumberInt(6666), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f130491a48cb70bea0481"), 
+    "CO2" : NumberInt(400), 
+    "HVOC" : NumberInt(0), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f211905e6f836203c9835"), 
+    "PH" : 15.4516573, 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f211905e6f836203c9836"), 
+    "TDS" : NumberInt(2010), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f211905e6f836203c9837"), 
+    "TEMP" : NumberInt(21), 
+    "HUM" : NumberInt(87), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f211905e6f836203c9838"), 
+    "LUX" : NumberInt(6709), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f211905e6f836203c9839"), 
+    "CO2" : NumberInt(400), 
+    "HVOC" : NumberInt(0), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f2f2905e6f836203c983b"), 
+    "PH" : 15.4516573, 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f2f2905e6f836203c983c"), 
+    "TDS" : NumberInt(0), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f2f2905e6f836203c983d"), 
+    "TEMP" : NumberInt(21), 
+    "HUM" : NumberInt(87), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f2f2905e6f836203c983e"), 
+    "LUX" : NumberInt(6502), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f2f2905e6f836203c983f"), 
+    "CO2" : NumberInt(403), 
+    "HVOC" : NumberInt(0), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f3d3d05e6f836203c9841"), 
+    "PH" : 15.4516573, 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f3d3d05e6f836203c9842"), 
+    "TDS" : NumberInt(269), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f3d3d05e6f836203c9843"), 
+    "TEMP" : NumberInt(20), 
+    "HUM" : NumberInt(83), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f3d3d05e6f836203c9844"), 
+    "LUX" : NumberInt(6300), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f3d3d05e6f836203c9845"), 
+    "CO2" : NumberInt(409), 
+    "HVOC" : NumberInt(1), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f4b4b05e6f836203c9847"), 
+    "PH" : 15.4516573, 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f4b4b05e6f836203c9848"), 
+    "TDS" : NumberInt(0), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f4b4b05e6f836203c9849"), 
+    "TEMP" : NumberInt(20), 
+    "HUM" : NumberInt(76), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f4b4b05e6f836203c984a"), 
+    "LUX" : NumberInt(6810), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f4b4b05e6f836203c984b"), 
+    "CO2" : NumberInt(400), 
+    "HVOC" : NumberInt(0), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f596105e6f836203c984d"), 
+    "PH" : 15.4516573, 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f596105e6f836203c984e"), 
+    "TDS" : NumberInt(1241), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f596105e6f836203c984f"), 
+    "TEMP" : NumberInt(19), 
+    "HUM" : NumberInt(75), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f596105e6f836203c9850"), 
+    "LUX" : NumberInt(6849), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f596105e6f836203c9851"), 
+    "CO2" : NumberInt(400), 
+    "HVOC" : NumberInt(0), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f676f05e6f836203c9853"), 
+    "PH" : 15.4516573, 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f676f05e6f836203c9854"), 
+    "TDS" : NumberInt(0), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f676f05e6f836203c9855"), 
+    "TEMP" : NumberInt(20), 
+    "HUM" : NumberInt(70), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f676f05e6f836203c9856"), 
+    "LUX" : NumberInt(6867), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f676f05e6f836203c9857"), 
+    "CO2" : NumberInt(400), 
+    "HVOC" : NumberInt(0), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f757405e6f836203c9859"), 
+    "PH" : 15.4516573, 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f757405e6f836203c985a"), 
+    "TDS" : NumberInt(2242), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f757405e6f836203c985b"), 
+    "TEMP" : NumberInt(18), 
+    "HUM" : NumberInt(68), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f757405e6f836203c985c"), 
+    "LUX" : NumberInt(6864), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f757405e6f836203c985d"), 
+    "CO2" : NumberInt(409), 
+    "HVOC" : NumberInt(1), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f838205e6f836203c985f"), 
+    "PH" : 15.4516573, 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f838205e6f836203c9860"), 
+    "TDS" : NumberInt(443), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f838205e6f836203c9861"), 
+    "TEMP" : NumberInt(15), 
+    "HUM" : NumberInt(73), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f838205e6f836203c9862"), 
+    "LUX" : NumberInt(0), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f838205e6f836203c9863"), 
+    "CO2" : NumberInt(418), 
+    "HVOC" : NumberInt(2), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f919905e6f836203c9865"), 
+    "PH" : 15.4516573, 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f919905e6f836203c9866"), 
+    "TDS" : NumberInt(17), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f919905e6f836203c9867"), 
+    "TEMP" : NumberInt(15), 
+    "HUM" : NumberInt(73), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f919905e6f836203c9868"), 
+    "LUX" : NumberInt(0), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f919905e6f836203c9869"), 
+    "CO2" : NumberInt(405), 
+    "HVOC" : NumberInt(0), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f9fa505e6f836203c986b"), 
+    "PH" : 15.4516573, 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f9fa505e6f836203c986c"), 
+    "TDS" : NumberInt(0), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f9fa505e6f836203c986d"), 
+    "TEMP" : NumberInt(16), 
+    "HUM" : NumberInt(71), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f9fa505e6f836203c986e"), 
+    "LUX" : NumberInt(0), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625f9fa505e6f836203c986f"), 
+    "CO2" : NumberInt(414), 
+    "HVOC" : NumberInt(2), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625fadb305e6f836203c9871"), 
+    "PH" : 15.4516573, 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625fadb305e6f836203c9872"), 
+    "TDS" : NumberInt(1011), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625fadb305e6f836203c9873"), 
+    "TEMP" : NumberInt(14), 
+    "HUM" : NumberInt(70), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625fadb305e6f836203c9874"), 
+    "LUX" : NumberInt(0), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625fadb305e6f836203c9875"), 
+    "CO2" : NumberInt(400), 
+    "HVOC" : NumberInt(0), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625fbbc605e6f836203c9877"), 
+    "PH" : 15.4516573, 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625fbbc605e6f836203c9878"), 
+    "TDS" : NumberInt(1333), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625fbbc605e6f836203c9879"), 
+    "TEMP" : NumberInt(15), 
+    "HUM" : NumberInt(77), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625fbbc605e6f836203c987a"), 
+    "LUX" : NumberInt(0), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625fbbc605e6f836203c987b"), 
+    "CO2" : NumberInt(400), 
+    "HVOC" : NumberInt(0), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625fc9db05e6f836203c987d"), 
+    "PH" : 15.4516573, 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625fc9db05e6f836203c987e"), 
+    "TDS" : NumberInt(356), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625fc9db05e6f836203c987f"), 
+    "TEMP" : NumberInt(14), 
+    "HUM" : NumberInt(87), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625fc9db05e6f836203c9880"), 
+    "LUX" : NumberInt(0), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625fc9db05e6f836203c9881"), 
+    "CO2" : NumberInt(413), 
+    "HVOC" : NumberInt(1), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625fd7ef05e6f836203c9883"), 
+    "PH" : 15.4516573, 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625fd7ef05e6f836203c9884"), 
+    "TDS" : NumberInt(0), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625fd7ef05e6f836203c9885"), 
+    "TEMP" : NumberInt(14), 
+    "HUM" : NumberInt(89), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625fd7ef05e6f836203c9886"), 
+    "LUX" : NumberInt(0), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625fd7ef05e6f836203c9887"), 
+    "CO2" : NumberInt(415), 
+    "HVOC" : NumberInt(2), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625fe60205e6f836203c9889"), 
+    "PH" : 15.4516573, 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625fe60205e6f836203c988a"), 
+    "TDS" : NumberInt(0), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625fe60205e6f836203c988b"), 
+    "TEMP" : NumberInt(15), 
+    "HUM" : NumberInt(89), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625fe60205e6f836203c988c"), 
+    "LUX" : NumberInt(4982), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625fe60205e6f836203c988d"), 
+    "CO2" : NumberInt(407), 
+    "HVOC" : NumberInt(1), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625ff42005e6f836203c988f"), 
+    "PH" : 15.4516573, 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625ff42005e6f836203c9890"), 
+    "TDS" : NumberInt(0), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625ff42005e6f836203c9891"), 
+    "TEMP" : NumberInt(16), 
+    "HUM" : NumberInt(93), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625ff42005e6f836203c9892"), 
+    "LUX" : NumberInt(4982), 
+    "__v" : NumberInt(0)
+}
+{ 
+    "_id" : ObjectId("625ff42005e6f836203c9893"), 
+    "CO2" : NumberInt(438), 
+    "HVOC" : NumberInt(5), 
+    "__v" : NumberInt(0)
+}
