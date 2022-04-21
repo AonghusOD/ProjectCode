@@ -2,6 +2,7 @@ import { React, useState, useEffect } from "react";
 import { Line } from "react-chartjs-2";
 import GetDataList from "./getData-list";
 import { dataMapping } from "./UtilityFunction";
+import ClimatePage from "./ClimatePage";
 
 const GetAllData = () => {
   const [data, setData] = useState(null);
