@@ -1,4 +1,4 @@
-import ClimatePage from '../components/Climate/ClimatePage';
+import ClimatePage from '../components/ClimatePage'
 import Head from 'next/head'
 
 export default function Climate() {
