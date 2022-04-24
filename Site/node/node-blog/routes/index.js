@@ -27,7 +27,6 @@ let Schema = mongoose.Schema;
 
 const airSchema = new Schema(
   {
-    airReading: String,
     TEMP: String,
     HUM: String,
     LUX: String,
@@ -35,6 +34,8 @@ const airSchema = new Schema(
     TDS: String,
     CO2: Number,
     HVOC: Number,
+    TIME: String,
+    STAMP: String,
   },
   { collection: "air" }
 );
@@ -56,33 +57,22 @@ router.get("/", function (req, res, next) {
 router.post("/setNoMessages", async function (req, res, next) {
   console.log(req.body);
   const data = await MessagesModel.updateOne({}, req.body, { upsert: true });
-  //var data = new MessagesModel(req.body)
-  //MessagesModel.updateOne({}, data);
-  //const data = new MessagesModel({_id : ObjectId("6222018bb2e6654c58c8cb22")});
-  //data.overwrite(req.body);
-  //data.save()
   res.end();
 });
 
 router.post("/getNoMessages", function (req, res, next) {
-  //let theDoc = MessagesModel.findOne({_id : ObjectId("6222018bb2e6654c58c8cb22")});
   MessagesModel.find().then(function (docs) {
     let theDoc = docs[docs.length - 1];
     console.log("/getNoMessages: " + theDoc);
-    // theDoc = JSON.stringify(theDoc)
     res.status(200).json(theDoc);
   });
 });
 
 router.post("/getAir", function (req, res, next) {
-  airModel.find().then(function (docs) {
-    //wrong thing
+  airModel.find().sort({ _id: -1 }).limit(10).then(function (docs) {
     let theDoc = docs[docs.length - 1];
-    //console.log("/getAir: " + theDoc)
     docs = JSON.stringify(docs);
     console.log("/getAir: docs" + docs);
-    //theDoc = JSON.stringify(theDoc)
-    //res.status(200).json(theDoc)
     res.status(200).json(docs);
   });
 });
@@ -94,12 +84,6 @@ router.post("/setAir", async function (req, res, next) {
   res.end()
 });
 
-
-
-
-
-
-
 function sendData(topicName, data) {
   console.log("STEP - Sending data to AWS  IoT Core: " + JSON.stringify(data));
 
@@ -109,16 +93,6 @@ function sendData(topicName, data) {
   return device.publish(topicName, JSON.stringify(data)); //  "signInEtc" in the topic
 }
 
-// device.send(payload).then(
-//   (data) => {
-//     var data = new airModel(payload)
-//       data.save()
-//   },
-//   (error) => {
-//     // error handling.
-//   }
-// );
-
 // We connect our client to AWS  IoT core.
 device.on("connect", function () {
   console.log("STEP - Connecting to AWS  IoT Core");
@@ -127,8 +101,6 @@ device.on("connect", function () {
   );
   device.subscribe("esp32/pub");
   device.subscribe(deviceRoot);
-  //airModel.updateOne({}, deviceRoot,{upsert: true});
-  //  sendData("signInEtcTopic", {connectStatus: "node.js is connected"})
 });
 
 // Set handler for the device, it will get the messages from subscribers topics.
@@ -142,52 +114,14 @@ device.on("message", function (topic, payload) {
     if (err) throw err;
     console.log("1 record inserted");
   });
-  //airModel.aggregate( [ { $group : { PH : "PH" } } ] )
-  // client.publish(topic, 'nodejs mqtt test', { qos: 0, retain: false }, (error) => {
-  //   if (error) {
-  //     console.error(error)
-  //   }
-  // })
-
-  //var newData = new airModel(payload.body());
-  //var data = new airModel(JSON.stringify(payload));
-  //data.save();
+ 
 });
 
-// device.send(payload {
-//   console.log("message", topic, payload.toString());
-//   var data = new airModel(payload);
-//   data.save()
-// });
+
 
 device.on("error", function (topic, payload) {
   console.log("Error:", topic, payload.toString());
 });
 
-
-// device.on("message", insertEvent);
-
-
-// function insertEvent(topic,payload) {
-//   console.log(topic + ":" + payload)
-//   var key=topic.replace(deviceRoot,'');
-//   console.log(payload.Hum)
-  //var data = new airModel(payload.Hum)
-  //data.save()
-  //airModel.update({}, { $set: { Hum: 'foo' } });
-//   airModel.update(
-//   { _id:key }, 
-//   { $push: { events: { event: {  value:payload, when:new Date() } } } }, 
-//   { upsert:true },
-
-//   function(err,docs) {  
-//   if(err) {
-//      console.log("Insert fail")// Improve error handling       
-//     }
-// }
-
-// );
-
-//}
 
 module.exports = router;
