@@ -105,12 +105,6 @@ void connectAWS()
 void publishMessage()
 {
   StaticJsonDocument<200> doc;
-  //  doc["humidity"] = h;
-  //  doc["temperature"] = t;
-  //  char jsonBuffer[512];
-  //  serializeJson(doc, jsonBuffer); // print to client
-  //
-  //  client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
 }
 
 void messageHandler(char* topic, byte* payload, unsigned int length)
@@ -175,10 +169,6 @@ JsonObject getJSonFromFile(DynamicJsonDocument *doc, String filename, bool force
   // open the file for reading:
   myFileSDCart = SD.open(filename);
   if (myFileSDCart) {
-    // read from the file until there's nothing else in it:
-    //          if (myFileSDCart.available()) {
-    //              firstWrite = false;
-    //          }
 
     DeserializationError error = deserializeJson(*doc, myFileSDCart);
     if (error) {
@@ -196,50 +186,76 @@ JsonObject getJSonFromFile(DynamicJsonDocument *doc, String filename, bool force
 
     return doc->as<JsonObject>();
   } else {
-    // if the file didn't open, print an error:
-    //Serial.print(F("Error opening (or file not exists) "));
-    //Serial.println(filename);
-    //Serial.println(F("Empty json created"));
     return doc->to<JsonObject>();
   }
 
 }
 
 bool saveJSonToAFile(DynamicJsonDocument *doc, String filename) {
-  // open the file. note that only one file can be open at a time,
-  // so you have to close this one before opening another.
-  //Serial.println(F("Open file in write mode"));
   myFileSDCart = SD.open(filename, FILE_WRITE);
   if (myFileSDCart) {
-    //Serial.print(F("Filename --> "));
-    //Serial.println(filename);
-    //Serial.print(F("Start write..."));
+    
     serializeJson(*doc, myFileSDCart);
-    //Serial.print(F("..."));
-    // close the file:
     myFileSDCart.close();
-
-    //Serial.println(F("done."));
-    //    char jsonBuffer[512];
-    //    size_t n = serializeJson(filename, jsonBuffer); // print to client
-    //    client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer, n);
     return true;
   } else {
-    // if the file didn't open, print an error:
-    //Serial.print(F("Error opening "));
-    //.Serial.println(filename);
-
     return false;
   }
 }
 
 void printFile(const char *filename) {
-  // Open file for reading
+  DynamicJsonDocument doc(1024);
   File file = SD.open(filename);
   if (!file) {
     Serial.println(F("Failed to read file"));
     return;
   }
+  ///////////////////////////////////////////
+  DeserializationError error = deserializeJson(doc, file);
+       while (file.available()) {
+        Serial.print((char) file.read());
+      }
+        float ph1 = doc["data"][0]["PH"];
+        uint8_t tds1 = doc["data"][1]["TDS"];
+        uint16_t temp1 = doc["data"][2]["TEMP"];
+        uint16_t hum1 = doc["data"][2]["HUM"];
+        uint8_t lux1 = doc["data"][3]["LUX"];
+        uint16_t co21 = doc["data"][4]["CO2"];
+        uint16_t hvoc1 = doc["data"][4]["HVOC"];
+       
+    
+        SD.remove(filename);
+        JsonObject obj;
+        obj = getJSonFromFile(&doc, filename);
+    
+        obj[F("millis")] = millis();
+    
+        JsonArray data;
+    
+        // Check if exist the array
+        if (!obj.containsKey(F("data"))) {
+          data = obj.createNestedArray(F("data"));
+        } else {
+          Serial.println(F("Find data array!"));
+          data = obj[F("data")];
+        }
+        JsonObject objArrayData = data.createNestedObject();
+        objArrayData["TEMP"] = temp1;
+        objArrayData["HUM"] = hum1;
+        objArrayData["TDS"] = tds1;
+        objArrayData["LUX"] = lux1;
+        objArrayData["PH"] = ph1;
+        objArrayData["CO2"] = co21;
+        objArrayData["HVOC"] = hvoc1;
+        
+        char jsonBuffer[512];
+        serializeJson(data, jsonBuffer); // print to client
+        client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
+        saveJSonToAFile(&doc, filename);
+        //printFile(filename);
+    /////////////////////////////////////////////////////////////
+
+  
 
   // Extract each characters by one by one
   while (file.available()) {
@@ -410,61 +426,12 @@ void setup() {
   if (saveSD_EventBits & ( airBit | luxBit | phBit | tdsBit | climateBit)) {
     Serial.println("Sending data to server.....");
     printFile(filename);
-    //    File file = SD.open(filename);
-    //  DeserializationError error = deserializeJson(doc, filename);
-    //   while (file.available()) {
-    //    Serial.print((char) file.read());
-    //  }
-    //
-    //    uint16_t temp1 = doc["millis"][0];;
-    //    uint16_t hum1 = doc["millis"];
-    //    uint8_t tds1 = doc["data"][0]["TDS"];
-    //    uint8_t lux1 = doc["data"][0]["LUX"];
-    //    const char* ph1 = doc["data"][0]["PH"];
-    //    Serial.print("ph1 this value");
-    //        Serial.println(ph1);
-    //    uint16_t co21 = doc["data"][0]["CO2"];
-    //
-    //
         SD.remove(filename);
-    //    JsonObject obj;
-    //    obj = getJSonFromFile(&doc, filename);
-    //
-    //    obj[F("millis")] = millis();
-    //
-    //    JsonArray data;
-    //
-    //    // Check if exist the array
-    //    if (!obj.containsKey(F("data"))) {
-    //      Serial.println(F("Not find data array! Crete one!"));
-    //      data = obj.createNestedArray(F("data"));
-    //    } else {
-    //      Serial.println(F("Find data array!"));
-    //      data = obj[F("data")];
-    //    }
-    //    JsonObject objArrayData = data.createNestedObject();
-    //    objArrayData["TEMP"] = temp1;
-    //    objArrayData["HUM"] = hum1;
-    //    objArrayData["TDS"] = temp1;
-    //    objArrayData["LUX"] = hum1;
-    //    objArrayData["PH"] = temp1;
-    //    objArrayData["CO2"] = co21;
-    //    saveJSonToAFile(&doc, filename);
-    //    printFile(filename);
-    //    char jsonBuffer[512];
-    //    serializeJson(data, jsonBuffer); // print to client
-    //    client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
     Serial.println("Bits set going to sleep");
     Serial.flush();
     esp_deep_sleep_start();
   }
 
-  //
-  // Serial.println("Setup ESP32 to sleep for every " + String(TIME_TO_SLEEP) +
-  //  " Seconds");
-  //  esp_deep_sleep_start();
-
-  // Now the task scheduler, which takes over control of scheduling individual tasks, is automatically started.
 }
 
 void loop()
@@ -491,74 +458,42 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
   obj[F("millis")] = millis();
 
   JsonArray data;
-
-  // Check if exist the array
-  if (!obj.containsKey(F("data"))) {
-    //Serial.println(F("Not find data array! Crete one!"));
+if (!obj.containsKey(F("data"))) {
     data = obj.createNestedArray(F("data"));
   } else {
-    //Serial.println(F("Find data array!"));
     data = obj[F("data")];
   }
 
-  //int received_Data = 0;
   for (;;)
   {
     if (xQueueReceive(data_Queue, &received_Data, portMAX_DELAY) == pdTRUE) {
-      //Serial.print("Received From Queue:");
-      //Serial.println(received_Data.sensor);
-      // create an object to add to the array
       JsonObject objArrayData = data.createNestedObject();
-
       switch (received_Data.sensor) {
         case CLIMATE_ID:
           {
             objArrayData["TEMP"] = received_Data.qData;
             objArrayData["HUM"] = received_Data.qData2;
             saveJSonToAFile(&doc, filename);
-            //client.write
-            //Serial.println("1 About to set climate Bit set");
             xEventGroupSetBits(SwitchEventGroup, climateBit);
-
-            //client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
-
-            //Serial.println("1 Climate Bit set");
-            //vTaskSuspend(climateHandle);
-            //vTaskDelay(100);
-//            if (isSaved) {
-//              Serial.println("File saved!");
-//            } else {
-//              Serial.println("Error on save File!");
-//            }
             break;
           }
         case AIR_ID:
           {
-            //Serial.println("Value of Sec", &sec);
             air_loop++;
-
-            //if(air_loop == 10){
             Serial.print("CO2: ");
             Serial.println(received_Data.qData);
             objArrayData["CO2"] = received_Data.qData;
             objArrayData["HVOC"] = received_Data.qData2;
             saveJSonToAFile(&doc, filename);
-            char jsonBuffer[512];
-            serializeJson(data, jsonBuffer); // print to client
-            client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
-            //SD.remove(filename);
             vTaskDelay(3000);
             xEventGroupSetBits(SwitchEventGroup, airBit);
             vTaskSuspend(airHandle);
-            //}
-
             break;
           }
         case PH_ID:
           {
             objArrayData["PH"] = received_Data.qData3;
             saveJSonToAFile(&doc, filename);
-            //Serial.println("3 About to set ph Bit set");
             xEventGroupSetBits(SwitchEventGroup, phBit);
             vTaskSuspend(phHandle);
             break;
@@ -567,9 +502,7 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
           {
             objArrayData["TDS"] = received_Data.qData;
             saveJSonToAFile(&doc, filename);
-            //Serial.println("4 About to set tds Bit set");
             xEventGroupSetBits(SwitchEventGroup, tdsBit);
-            //Serial.println("4 TDS Bit set");
             vTaskSuspend(tdsHandle);
             break;
           }
@@ -577,9 +510,7 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
           {
             objArrayData["LUX"] = received_Data.qData;
             saveJSonToAFile(&doc, filename);
-            //Serial.println("5 About to set lux Bit set");
             xEventGroupSetBits(SwitchEventGroup, luxBit);
-            //Serial.println("5 lux Bit set");
             Serial.println("Waiting for CO2 data.......");
             vTaskSuspend(luxHandle);
             break;
@@ -595,18 +526,6 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
             break;
           }
       }
-      //      if (bootCount / 5 == 1) {
-      //        Serial.println("Ran Upload");
-      //        char jsonBuffer[512];
-      //        serializeJson(data, jsonBuffer); // print to client
-      //        client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
-      //        SD.remove(filename);
-      //      }
-      //Serial.print("Boot Count");
-      //Serial.println(bootCount);
-      //      // Print test file
-      //      Serial.println(F("Print test file..."));
-      //      printFile(filename);
       vTaskDelay(1000);  // one tick delay (15ms) in between reads for stability
     }
   }
@@ -621,10 +540,7 @@ void TaskAir(void *pvParameters)  // This is a task.
     Serial.println("Failed to start sensor! Please check your wiring.");
     while (1);
   }
-
-  // Wait for the sensor to be ready
-  while (!ccs.available());
-
+while (!ccs.available());
   for (;;)
   {
     
@@ -633,22 +549,12 @@ void TaskAir(void *pvParameters)  // This is a task.
       if (!ccs.readData()) {
         air_loop ++;
         vTaskDelay(50);
-        //Serial.print("CO2: ................");
-        //Serial.print(ccs.geteCO2());
-        //Serial.print("ppm, TVOC: ");
-        //Serial.println(ccs.getTVOC());
         if (air_loop == 10) {
-          //Serial.print("CO2: ................");
-          //Serial.print(ccs.geteCO2());
-          //Serial.print("ppm, TVOC: ");
-          //Serial.println(ccs.getTVOC());
           AirData.sensor = AIR_ID;
-          //Serial.print("made it co2 task");
           AirData.qData = ccs.geteCO2();
           AirData.qData2 = ccs.getTVOC();
           xQueueSend(data_Queue, &AirData, 0);
           vTaskSuspend( NULL );
-
         }
       }
       else {
@@ -656,10 +562,6 @@ void TaskAir(void *pvParameters)  // This is a task.
         while (1);
       }
     }
-    //Serial.print("Core");
-    //Serial.println(xPortGetCoreID());
-    //vTaskSuspend( NULL );
-    // one tick delay (15ms) in between reads for stability
   }
 }
 
@@ -672,12 +574,7 @@ void TaskReadPH( void *pvParameters )
     if (millis() - timepoint > 1000U) //time interval: 1s
     {
       timepoint = millis();
-      //voltage = rawPinValue / esp32ADC * esp32Vin
       voltage = analogRead(PH_PIN) / ESPADC * ESPVOLTAGE; // read the voltage
-      //Serial.print("voltage:");
-      //Serial.println(voltage, 4);
-
-
       phValue = ph.readPH(voltage, 19); // convert voltage to pH with temperature compensation
       //Serial.print("pH:");
       //Serial.println(phValue, 4);
@@ -686,17 +583,13 @@ void TaskReadPH( void *pvParameters )
       xQueueSend(data_Queue, &PHData, 0);
       vTaskDelay(1000);
     }
-    //vTaskSuspend( NULL );
-    // vTaskDelay(100);  // one tick delay (15ms) in between reads for stability
-  }
+     }
 }
 
 void TaskReadTDS( void *pvParameters ) {
   dataStruct TDSData;
   xSemaphoreGive( Air_Semaphore );
   for (;;) {
-    //vTaskDelay(1000);
-    //temperature = readTemperature();  //add your temperature sensor and read it
     gravityTds.setTemperature(temperature);  // set the temperature and execute temperature compensation
     gravityTds.update();  //sample and calculate
     tdsValue = gravityTds.getTdsValue();  // then get the value
@@ -728,8 +621,6 @@ void TaskReadLux( void *pvParameters )
         lux = BH1750.getLux(); //  waits until a conversion finished
         Serial.print("Lux");
         Serial.println(lux);
-        //Serial.print("Core");
-        //Serial.println(xPortGetCoreID());
         x++;
       }
       lux = BH1750.getLux();
@@ -737,10 +628,6 @@ void TaskReadLux( void *pvParameters )
       LuxData.qData = lux;
       xQueueSend(data_Queue, &LuxData, 0);
     }
-    //vTaskDelay(10000);
-    //vTaskSuspend( NULL );
-    // one tick delay (15ms) in between reads for stability
-
   }
 }
 
@@ -750,16 +637,10 @@ void ClimateTask(void *pvParameters)  // This is a task.
   dataStruct ClimateData;
   for (;;)
   {
-    // Reading temperature or humidity takes about 250 milliseconds!
-    // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
     float h = dht.readHumidity();
-    // Read temperature as Celsius (the default)
     float t = dht.readTemperature();
-    // Read temperature as Fahrenheit (isFahrenheit = true)
     float f = dht.readTemperature(true);
-
-    // Check if any reads failed and exit early (to try again).
-    if (isnan(h) || isnan(t) || isnan(f)) {
+if (isnan(h) || isnan(t) || isnan(f)) {
       Serial.println(F("Failed to read from DHT sensor!"));
       return;
     }
@@ -768,7 +649,6 @@ void ClimateTask(void *pvParameters)  // This is a task.
     float hif = dht.computeHeatIndex(f, h);
     // Compute heat index in Celsius (isFahreheit = false)
     float hic = dht.computeHeatIndex(t, h, false);
-    
     ClimateData.sensor = CLIMATE_ID;         //ID for switch statement
     ClimateData.qData = t;                   //Data to be sent
     ClimateData.qData2 = h;                  //Data to be sent
@@ -780,21 +660,6 @@ void ClimateTask(void *pvParameters)  // This is a task.
     Serial.print(t);
     Serial.println(F("°C "));
     vTaskSuspend(climateHandle);
-
-  }
-}
-
-void TaskUploadServer(void *pvParameters) {
-  dataStruct UploadData;
-  for (;;) {
-    //if (bootCount < 0) {
-    if (bootCount == 5) {
-      Serial.println("Set Upload ID");
-      UploadData.sensor = UPLOAD_ID;
-      xQueueSend(data_Queue, &UploadData, 0);
-      vTaskSuspend(NULL);
-    }
-    //}
 
   }
 }
