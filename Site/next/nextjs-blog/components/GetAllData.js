@@ -1,6 +1,7 @@
 import { React, useState, useEffect } from "react";
 import { Line } from "react-chartjs-2";
 import GetDataList from "./getData-list";
+import CO2Page from "./CO2List";
 import { dataMapping } from "./UtilityFunction";
 import ClimatePage from "./ClimatePage";
 
@@ -15,15 +16,15 @@ const GetAllData = () => {
       .then((data) => {
         let air = [];
 
-        for (let i = 0; i < 40; i++) {
+        for (let i = 0; i < 50; i++) {
           let allData = {
             id: i,
             ...data[i],
           };
           console.log(allData);
           data.forEach((element) => {
-            const { PH, TDS, TEMP, LUX, CO2, HVOC, HUM } = element;
-            const result = dataMapping({ PH, TDS, TEMP, LUX, CO2, HVOC, HUM });
+            const { PH, TDS, TEMP, LUX, CO2, HVOC, HUM, STAMP } = element;
+            const result = dataMapping({ PH, TDS, TEMP, LUX, CO2, HVOC, HUM, STAMP });
             air.push(result);
           });
         }
@@ -41,6 +42,7 @@ const GetAllData = () => {
   return (
     <div>
       <GetDataList items={data} />
+     
     </div>
   );
 };

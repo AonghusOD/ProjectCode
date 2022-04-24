@@ -6,6 +6,7 @@ export const dataMapping = ({
   CO2 = 0,
   HVOC = 0,
   HUM = 0,
+  STAMP = 0,
 }) => {
   return {
     PH,
@@ -15,5 +16,6 @@ export const dataMapping = ({
     CO2,
     HVOC,
     HUM,
+    STAMP,
   };
 };

@@ -1,4 +1,4 @@
-import AirPage from '../components/air/AirPage';
+import GetAirData from '../components/air/getAirData'
 import Head from 'next/head'
 
 export default function Air() {
@@ -7,7 +7,7 @@ export default function Air() {
       <Head>
         <title>Air Readings</title>
       </Head>
-      <AirPage />
+      <GetAirData/>
     </>
   )
 }
