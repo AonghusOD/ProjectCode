@@ -20,6 +20,9 @@
 #include <PubSubClient.h>
 #include "WiFi.h"
 
+#include <NTPClient.h>
+#include <WiFiUdp.h>
+
 //Header Files SD
 #include "FS.h"
 #include "SD.h"
@@ -156,6 +159,13 @@ TaskHandle_t phHandle;
 TaskHandle_t tdsHandle;
 TaskHandle_t luxHandle;
 TaskHandle_t uploadHandle;
+TaskHandle_t timeHandle;
+
+// Variables to save date and time
+String formattedDate;
+String dayStamp;
+String timeStamp;
+
 
 DHT dht(DHTPIN, DHTTYPE);
 ///////////////////////////////////////JSON STUFF
@@ -194,7 +204,7 @@ JsonObject getJSonFromFile(DynamicJsonDocument *doc, String filename, bool force
 bool saveJSonToAFile(DynamicJsonDocument *doc, String filename) {
   myFileSDCart = SD.open(filename, FILE_WRITE);
   if (myFileSDCart) {
-    
+
     serializeJson(*doc, myFileSDCart);
     myFileSDCart.close();
     return true;
@@ -212,51 +222,49 @@ void printFile(const char *filename) {
   }
   ///////////////////////////////////////////
   DeserializationError error = deserializeJson(doc, file);
-       while (file.available()) {
-        Serial.print((char) file.read());
-      }
-        float ph1 = doc["data"][0]["PH"];
-        uint8_t tds1 = doc["data"][1]["TDS"];
-        uint16_t temp1 = doc["data"][2]["TEMP"];
-        uint16_t hum1 = doc["data"][2]["HUM"];
-        uint8_t lux1 = doc["data"][3]["LUX"];
-        uint16_t co21 = doc["data"][4]["CO2"];
-        uint16_t hvoc1 = doc["data"][4]["HVOC"];
-       
-    
-        SD.remove(filename);
-        JsonObject obj;
-        obj = getJSonFromFile(&doc, filename);
-    
-        obj[F("millis")] = millis();
-    
-        JsonArray data;
-    
-        // Check if exist the array
-        if (!obj.containsKey(F("data"))) {
-          data = obj.createNestedArray(F("data"));
-        } else {
-          Serial.println(F("Find data array!"));
-          data = obj[F("data")];
-        }
-        JsonObject objArrayData = data.createNestedObject();
-        objArrayData["TEMP"] = temp1;
-        objArrayData["HUM"] = hum1;
-        objArrayData["TDS"] = tds1;
-        objArrayData["LUX"] = lux1;
-        objArrayData["PH"] = ph1;
-        objArrayData["CO2"] = co21;
-        objArrayData["HVOC"] = hvoc1;
-        
-        char jsonBuffer[512];
-        serializeJson(data, jsonBuffer); // print to client
-        client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
-        saveJSonToAFile(&doc, filename);
-        //printFile(filename);
-    /////////////////////////////////////////////////////////////
+  while (file.available()) {
+    Serial.print((char) file.read());
+  }
+  float ph1 = doc["data"][0]["PH"];
+  uint8_t tds1 = doc["data"][1]["TDS"];
+  uint16_t temp1 = doc["data"][2]["TEMP"];
+  uint16_t hum1 = doc["data"][2]["HUM"];
+  uint8_t lux1 = doc["data"][3]["LUX"];
+  uint16_t co21 = doc["data"][4]["CO2"];
+  uint16_t hvoc1 = doc["data"][4]["HVOC"];
 
-  
 
+  SD.remove(filename);
+  JsonObject obj;
+  obj = getJSonFromFile(&doc, filename);
+
+  obj[F("millis")] = millis();
+
+  JsonArray data;
+
+  // Check if exist the array
+  if (!obj.containsKey(F("data"))) {
+    data = obj.createNestedArray(F("data"));
+  } else {
+    //Serial.println(F("Find data array!"));
+    data = obj[F("data")];
+  }
+  JsonObject objArrayData = data.createNestedObject();
+  objArrayData["TEMP"] = temp1;
+  objArrayData["HUM"] = hum1;
+  objArrayData["TDS"] = tds1;
+  objArrayData["LUX"] = lux1;
+  objArrayData["PH"] = ph1;
+  objArrayData["CO2"] = co21;
+  objArrayData["HVOC"] = hvoc1;
+  objArrayData["HVOC"] = hvoc1;
+  objArrayData["TIME"] = formattedDate;
+  objArrayData["STAMP"] =  timeStamp;
+  char jsonBuffer[512];
+  serializeJson(data, jsonBuffer); // print to client
+  client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
+  saveJSonToAFile(&doc, filename);
+  /////////////////////////////////////////////////////////////
   // Extract each characters by one by one
   while (file.available()) {
     Serial.print((char) file.read());
@@ -265,6 +273,7 @@ void printFile(const char *filename) {
 
   // Close the file
   file.close();
+  vTaskDelay(1000);
 }
 //----------------------------------------------------------------------
 
@@ -295,7 +304,18 @@ void TaskReadPH( void *pvParameters );
 void TaskReadTDS( void *pvParameters );
 void TaskReadLux( void *pvParameters );
 void ClimateTask(void *pvParameters);
-//void TaskUploadServer(void *pvParameters);
+void GetTimeTask(void *pvParameters) ;
+
+
+
+
+// Define NTP Client to get time
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP);
+
+
+
+
 
 // the setup function runs once when you press reset or power the board
 void setup() {
@@ -397,14 +417,14 @@ void setup() {
     ,  &climateHandle
     ,  1);
 
-  //  xTaskCreatePinnedToCore(
-  //    TaskUploadServer
-  //    ,  "Upload Task"
-  //    ,  1024  // Stack size
-  //    ,  NULL
-  //    ,  4  // Priority
-  //    ,  &uploadHandle
-  //    ,  1);
+  xTaskCreatePinnedToCore(
+    GetTimeTask
+    ,  "Get Time Task"
+    ,  1224  // Stack size
+    ,  NULL
+    ,  4  // Priority
+    ,  &timeHandle
+    ,  1);
 
   AutoReloadTimerHandle = xTimerCreate("Auto Reload Timer", pdMS_TO_TICKS(60000), pdTRUE, 0, AutoReloadCallback);
   xTimerStart(AutoReloadTimerHandle, 0);
@@ -414,11 +434,19 @@ void setup() {
 
   //Increment boot number and print it every reboot
   ++bootCount;
-  
 
-  DynamicJsonDocument doc(524);
+  // Initialize a NTPClient to get time
+  timeClient.begin();
+  // Set offset time in seconds to adjust for your timezone, for example:
+  // GMT +1 = 3600
+  // GMT +8 = 28800
+  // GMT -1 = -3600
+  // GMT 0 = 0
+  timeClient.setTimeOffset(3600);
 
 
+
+  //DynamicJsonDocument doc(524);
 
   esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
   EventBits_t saveSD_EventBits;
@@ -426,7 +454,7 @@ void setup() {
   if (saveSD_EventBits & ( airBit | luxBit | phBit | tdsBit | climateBit)) {
     Serial.println("Sending data to server.....");
     printFile(filename);
-        SD.remove(filename);
+    SD.remove(filename);
     Serial.println("Bits set going to sleep");
     Serial.flush();
     esp_deep_sleep_start();
@@ -458,7 +486,7 @@ void TaskSDWrite(void *pvParameters)  // This is a task.
   obj[F("millis")] = millis();
 
   JsonArray data;
-if (!obj.containsKey(F("data"))) {
+  if (!obj.containsKey(F("data"))) {
     data = obj.createNestedArray(F("data"));
   } else {
     data = obj[F("data")];
@@ -540,10 +568,10 @@ void TaskAir(void *pvParameters)  // This is a task.
     Serial.println("Failed to start sensor! Please check your wiring.");
     while (1);
   }
-while (!ccs.available());
+  while (!ccs.available());
   for (;;)
   {
-    
+
     if (ccs.available()) {
 
       if (!ccs.readData()) {
@@ -581,9 +609,9 @@ void TaskReadPH( void *pvParameters )
       PHData.sensor = PH_ID;
       PHData.qData3 = phValue;
       xQueueSend(data_Queue, &PHData, 0);
-      vTaskDelay(1000);
+      vTaskDelay(3000);
     }
-     }
+  }
 }
 
 void TaskReadTDS( void *pvParameters ) {
@@ -600,7 +628,7 @@ void TaskReadTDS( void *pvParameters ) {
     TDSData.sensor = TDS_ID;
     TDSData.qData = tdsValue;
     xQueueSend(data_Queue, &TDSData, 0);
-    vTaskDelay(1000);
+    vTaskDelay(3000);
     vTaskSuspend( NULL );
     //vTaskDelay(100);
   }
@@ -627,6 +655,7 @@ void TaskReadLux( void *pvParameters )
       LuxData.sensor = LUX_ID;
       LuxData.qData = lux;
       xQueueSend(data_Queue, &LuxData, 0);
+      vTaskDelay(3000);
     }
   }
 }
@@ -640,7 +669,7 @@ void ClimateTask(void *pvParameters)  // This is a task.
     float h = dht.readHumidity();
     float t = dht.readTemperature();
     float f = dht.readTemperature(true);
-if (isnan(h) || isnan(t) || isnan(f)) {
+    if (isnan(h) || isnan(t) || isnan(f)) {
       Serial.println(F("Failed to read from DHT sensor!"));
       return;
     }
@@ -653,14 +682,42 @@ if (isnan(h) || isnan(t) || isnan(f)) {
     ClimateData.qData = t;                   //Data to be sent
     ClimateData.qData2 = h;                  //Data to be sent
     xQueueSend(data_Queue, &ClimateData, 0); //Structure data queued by copy
-    
+
     Serial.print(F("Humidity: "));
-    Serial.print(h);
+    Serial.println(h);
     Serial.print(F("%  Temperature: "));
     Serial.print(t);
     Serial.println(F("°C "));
+    vTaskDelay(3000);
     vTaskSuspend(climateHandle);
 
+  }
+}
+
+void GetTimeTask(void *pvParameters)  // This is a task.
+{
+  for (;;)
+  {
+    while (!timeClient.update()) {
+      timeClient.forceUpdate();
+    }
+    // The formattedDate comes with the following format:
+    // 2018-05-28T16:00:13Z
+    // We need to extract date and time
+    formattedDate = timeClient.getFormattedDate();
+    Serial.println(formattedDate);
+
+    // Extract date
+    int splitT = formattedDate.indexOf("T");
+    dayStamp = formattedDate.substring(0, splitT);
+    Serial.print("DATE: ");
+    Serial.println(dayStamp);
+    // Extract time
+    timeStamp = formattedDate.substring(splitT + 1, formattedDate.length() - 1);
+    Serial.print("HOUR: ");
+    Serial.println(timeStamp);
+    vTaskSuspend(timeHandle);
+    delay(1000);
   }
 }
 
