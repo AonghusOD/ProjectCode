@@ -596,21 +596,25 @@ void TaskAir(void *pvParameters)  // This is a task.
 void TaskReadPH( void *pvParameters )
 {
   dataStruct PHData;
-  for (;;) {
-    //vTaskDelay(1000);
+  for (;;)
+  {
     static unsigned long timepoint = millis();
-    if (millis() - timepoint > 1000U) //time interval: 1s
-    {
-      timepoint = millis();
-      voltage = analogRead(PH_PIN) / ESPADC * ESPVOLTAGE; // read the voltage
-      phValue = ph.readPH(voltage, 19); // convert voltage to pH with temperature compensation
-      //Serial.print("pH:");
-      //Serial.println(phValue, 4);
-      PHData.sensor = PH_ID;
+  if (millis() - timepoint > 1000U) //time interval: 1s
+  {
+    timepoint = millis();
+    //voltage = rawPinValue / esp32ADC * esp32Vin
+    voltage = analogRead(PH_PIN) / ESPADC * ESPVOLTAGE; // read the voltage
+    //Serial.print("voltage:");
+    //Serial.println(voltage, 4);
+
+    phValue = ph.readPH(voltage, temperature); // convert voltage to pH with temperature compensation
+   // Serial.print("pH:");
+    //Serial.println(phValue, 4);
+    PHData.sensor = PH_ID;
       PHData.qData3 = phValue;
       xQueueSend(data_Queue, &PHData, 0);
       vTaskDelay(3000);
-    }
+  }
   }
 }
 
@@ -684,8 +688,9 @@ void ClimateTask(void *pvParameters)  // This is a task.
     xQueueSend(data_Queue, &ClimateData, 0); //Structure data queued by copy
 
     Serial.print(F("Humidity: "));
-    Serial.println(h);
-    Serial.print(F("%  Temperature: "));
+    Serial.print(h);
+    Serial.println("%");
+    Serial.print(F("Temperature: "));
     Serial.print(t);
     Serial.println(F("°C "));
     vTaskDelay(3000);
@@ -705,17 +710,17 @@ void GetTimeTask(void *pvParameters)  // This is a task.
     // 2018-05-28T16:00:13Z
     // We need to extract date and time
     formattedDate = timeClient.getFormattedDate();
-    Serial.println(formattedDate);
+    //Serial.println(formattedDate);
 
     // Extract date
     int splitT = formattedDate.indexOf("T");
     dayStamp = formattedDate.substring(0, splitT);
-    Serial.print("DATE: ");
-    Serial.println(dayStamp);
+    //Serial.print("DATE: ");
+    //Serial.println(dayStamp);
     // Extract time
     timeStamp = formattedDate.substring(splitT + 1, formattedDate.length() - 1);
-    Serial.print("HOUR: ");
-    Serial.println(timeStamp);
+    //Serial.print("HOUR: ");
+    //Serial.println(timeStamp);
     vTaskSuspend(timeHandle);
     delay(1000);
   }
