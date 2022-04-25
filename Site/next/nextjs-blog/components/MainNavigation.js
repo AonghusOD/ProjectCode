@@ -18,7 +18,6 @@ function MainNavigation(props) {
       </Link>
       <nav className={classes.navigation}>
         <ul>
-        
           &nbsp;&nbsp;&nbsp;
           <li>
             <Link href="/water">

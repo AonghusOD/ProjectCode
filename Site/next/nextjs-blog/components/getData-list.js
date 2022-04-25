@@ -102,7 +102,7 @@ function GetDataList(props) {
     labels: [TIMEData[0],TIMEData[1],TIMEData[2],TIMEData[3],TIMEData[4],TIMEData[5],TIMEData[6]],
     datasets: [
       {
-        label: "Temperature",
+        label: "Temperature Data",
         fill: false,
         lineTension: 0.1,
         backgroundColor: "rgba(75,192,192,0.4)",
@@ -298,7 +298,7 @@ function GetDataList(props) {
               <h2>LUX&nbsp;&nbsp;&nbsp;</h2>
               <MockItem text={LUXData[0]} />
             </Grid>
-            <Grid xs={4}>
+            <Grid xs={3.5}>
               <h2>TEMP&nbsp;&nbsp;&nbsp;&nbsp;</h2>
               <MockItem text={TEMPData[0]} />
             </Grid>
