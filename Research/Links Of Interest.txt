@@ -1,0 +1,53 @@
+//Guide on how to use FreeRTOS with Arduino
+https://wiki.seeedstudio.com/Software-FreeRTOS/#quick-start-with-freertos-for-arduino
+
+//SD card Research
+https://forum.arduino.cc/t/logging-data-to-an-sd-card-efficiently/444097
+https://randomnerdtutorials.com/esp32-microsd-card-arduino/
+
+//TDS Sensor
+https://www.dfrobot.com/product-1662.html
+
+//LUX reading BH1750
+https://learn.adafruit.com/adafruit-bh1750-ambient-light-sensor
+
+//Saving as JSON - Arduino JSON
+https://www.mischianti.org/2020/01/26/manage-json-file-with-arduino-and-esp8266/
+
+//Growth in people growingcrops
+https://www.independent.ie/regionals/sligochampion/news/pandemic-saw-huge-rise-in-people-growing-their-own-food-41177387.html
+
+//MQTT protocol research
+https://www.tabnine.com/code/javascript/functions/mqtt/MqttClient/publish
+https://stackoverflow.com/questions/42809581/how-to-subscribe-client-and-save-the-data-to-mongodb-in-node-js-mosca-and-mqtt
+https://arduinojson.org/v6/how-to/use-arduinojson-with-pubsubclient/
+
+//Research on API and adding state to array
+https://stackoverflow.com/questions/26505064/what-is-the-best-way-to-add-a-value-to-an-array-in-state
+https://stackoverflow.com/questions/65062944/pushing-api-data-into-chart-js
+https://stackoverflow.com/questions/37610680/mongoose-find-query-sort-json-array-by-date
+
+
+https://forum.arduino.cc/t/where-goes-the-esp32-memory/649117
+
+//Passing data in React
+https://arduinojson.org/v6/issues/cannot-get-values/
+https://www.geeksforgeeks.org/how-to-pass-data-from-one-component-to-other-component-in-reactjs/
+
+https://www.youtube.com/watch?v=n1EBzMDPI74
+
+//Deep-sleep and Power Saving Research
+https://www.freertos.org/RTOS-idle-task.html
+https://www.geekstips.com/battery-life-calculator-sleep-mode/
+https://electronics.stackexchange.com/questions/384430/battery-life-calculation-sleeping-and-wake-modes
+https://www.instructables.com/ESP32-Deep-Sleep-Tutorial/
+https://www.huntoffice.ie/energizer-ultimate-battery-lithium-lr06-1.5v-aa-634352-pack-10-328135.html
+
+
+//Other research
+https://www.youtube.com/watch?v=sguU67kXgIg
+https://nextui.org/docs/guide/nextui-plus-nextjs
+https://javascript.plainenglish.io/how-to-sort-a-map-in-javascript-es6-59751f06f692
+https://setu677.medium.com/how-to-connect-to-mongodb-on-aws-ec2-instance-with-robomongo-b2977b8a112f
+https://www.youtube.com/watch?v=mw5i_QGDomw
+https://nextjs.org/docs/api-reference/next/image
