@@ -1,12 +1,13 @@
 # MERN Stack Application 
 ## Enviroment Monitor System 
+
 ![Architecture Diagram](https://github.com/AonghusOD/ProjectCode/blob/master/Diagrams/Poster.png)
 
 # Getting Started
 
 Nextjs and Node can run independently using default data but any changes will be reverted back to defaults if page is refreshed. 
 
-If data would like to be stored in a database, Mongodb will need to be installed and running before node server is running.
+If data would like to be stored in a database, Mongodb will need to be installed and running "before" node server is started.
 
 ## [Mongodb Download](https://www.mongodb.com/try/download/community)
 
