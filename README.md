@@ -45,6 +45,10 @@ npm install
 ```
 npm run dev
 ```
+Application can be seen running via internet browser at address:
+```
+https://localhost:3000/
+```
 # Project Overview
 
 The scope of the project was mainly focused on deploying a full-stack web application using the MERN stack and using embedded C/C++ to write the code for ESP32.
