@@ -24,13 +24,13 @@ Copy both "next" and "node" directories to "c/fsd.
 
 ## Install Dependencies and Start Servers
 
-- Start cmd or terminal
+- Start command prompt or terminal
 
 ```
-- cd C:\fsd\node\node-blog
+cd C:\fsd\node\node-blog
 ```
 ```
-- npm install
+npm install
 ```
 ```
 - npm start
