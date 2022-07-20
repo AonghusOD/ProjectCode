@@ -33,17 +33,18 @@ cd C:\fsd\node\node-blog
 npm install
 ```
 ```
-- npm start
+npm start
 ```
 ```
-- cd C:\fsd\next\nextjs-blog
+cd C:\fsd\next\nextjs-blog
 ```
 ```
-- npm install
+npm install
 ```
 ```
-- npm run dev
+npm run dev
 ```
+# Project Overview
 
 The scope of the project was mainly focused on deploying a full-stack web application using the MERN stack and using embedded C/C++ to write the code for ESP32.
 
