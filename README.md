@@ -22,10 +22,10 @@ Create new folder "fsd" directly on the "C" drive.
 Copy both "next" and "node" directories to "c/fsd.
 ```
 
-## Install dependencies and start servers.
-```
+## Install Dependencies and Start Servers
+
 - Start cmd or terminal
-```
+
 ```
 - cd C:\fsd\node\node-blog
 ```
