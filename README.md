@@ -1,5 +1,5 @@
 # MERN Stack Application 
-## Enviroment Monitor System 
+## Enviroment Monitoring System 
 
 ![Architecture Diagram](https://github.com/AonghusOD/ProjectCode/blob/master/Diagrams/Poster.png)
 
