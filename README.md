@@ -15,3 +15,45 @@ Node.js was used as middleware on the backend. Express server-side framework ran
 ESP32 publishes an MQTT message to a topic on AWS IOT Core. Node.js is subscribed to the topic and saves incoming data to the Mongo DB database. The web application receives data from the database using Nodejs and an API. Data is then displayed on a web page.
 
 # Getting Started
+
+Nextjs and Node can run independently using default data but any changes will be reverted back to defaults if page is refreshed. 
+
+If data would like to be stored in a database Mongodb will need to be installed and running before node server is running.
+```
+#[Mongodb Download](https://www.mongodb.com/try/download/community)
+```
+```
+#[Nice User Interface For Mongodb](https://studio3t.com)
+```
+```
+Download folder "MERN Stack Site"
+```
+```
+Create new folder "fsd" directly on the "C" drive.
+```
+```
+Copy both "next" and "node" directories to "c/fsd.
+```
+
+##Install dependencies
+```
+- Start cmd or terminal
+```
+```
+- cd C:\fsd\node\node-blog
+```
+```
+- npm install
+```
+```
+- npm start
+```
+```
+- cd C:\fsd\next\nextjs-blog
+```
+```
+- npm install
+```
+```
+- npm run dev
+```
