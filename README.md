@@ -60,7 +60,7 @@ On the frontend, React was used with Next.js framework that provides faster rend
 
 Node.js was used as middleware on the backend. Express server-side framework ran inside here too for URL routing and handling HTTP requests and responses.
 
-![AWS Diagram](https://github.com/AonghusOD/FinalYearProject/blob/main/Diagrams/UML%20State%20Diagram%20AWS.png)
+![AWS Diagram](.Diagrams/UML%20State%20Diagram%20AWS.png)
 
 ESP32 publishes an MQTT message to a topic on AWS IOT Core. Node.js is subscribed to the topic and saves incoming data to the Mongo DB database. The web application receives data from the database using Nodejs and an API. Data is then displayed on a web page.
 
