@@ -2,7 +2,7 @@
 # MERN Stack Application 
 ## Enviroment Monitoring System 
 
-![Architecture Diagram]./FinalYearProject/blob/main/Diagrams/Poster.png)
+![Architecture Diagram]./AonghusOD/ProjectCode/Diagrams/Poster.png)
 
 # Getting Started
 
